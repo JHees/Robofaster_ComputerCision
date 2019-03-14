@@ -153,6 +153,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Functions.h" />
     <ClInclude Include="pch.h" />
   </ItemGroup>
   <ItemGroup>

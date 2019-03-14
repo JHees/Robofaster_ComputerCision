@@ -5,81 +5,11 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include<vector>
+#include"Functions.h"
+
 using namespace cv;
 using namespace std;
-Mat colorReduce(const Mat& input, int div)
-{
-	Mat output = input.clone();
-	int row = output.rows;
-	int col = output.cols*output.channels();
-	uchar buf[256];
-	for (int i = 0; i < 256; ++i)
-	{
-		buf[i] = i / div * div + div / 2;
-	}
-	for (int i = 0; i < row; ++i)
-	{
-		for (int j = 0; j < col; ++j)
-		{
-			output.ptr<uchar>(i)[j] =buf[output.ptr<uchar>(i)[j]];
-		}
-	}
-	return output;
-}
 
-void Callback_V(int tra, void* ptr)
-{
-	vector<Mat>* cha = (vector<Mat>*)ptr;
-	(*cha)[2]= Mat((*cha)[2].rows,(*cha)[2].cols,CV_8UC1,Scalar(tra));
-}
-
-void Callback_S_Thre_APPLE(int tra, void* ptr)
-{
-	Mat S_Thre;
-	Mat* ROI = (Mat*)ptr;
-	threshold((*ROI), S_Thre, tra, 255, 1);
-
-
-	imshow("S_Threshold_APPLE",S_Thre);
-
-	vector<Mat> cha_ROI;
-	split(S_Thre, cha_ROI);
-	//imshow("ROI_H", cha_ROI[0]);
-	//imshow("ROI_S", cha_ROI[1]);
-	imshow("ROI_V", cha_ROI[2]);
-//	*ROI = S_Thre;
-
-}
-
-void Callback_Thre_V(int tra, void* ptr)
-{
-	Mat Thre_V;
-	vector<Mat>*cha = (vector<Mat>*)ptr;
-	threshold((*cha)[2], Thre_V, tra, 255, 1);
-	//imshow("Thre_V before blur", Thre_V);
-	//blur(Thre_V, Thre_V, Size(3, 3));
-	vector<vector<Point>> con;
-	findContours(Thre_V, con, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
-	for (int i = 0; i < con.size(); ++i)
-		for (int j = 0; j < con[i].size(); ++j)
-		{
-			cout << con[i][j] << ' ';
-			Thre_V.ptr<Scalar>(i)[j] = Scalar(125);
-		}
-	cout << endl;
-	
-	imshow("Thre_V", Thre_V);
-}
-
-void Callback_Canny1(int tra, void* ptr)
-{
-
-}
-
-void Callback_Canny2(int tra, void*)
-{
-
-}
 int main()
 {
 	VideoCapture* cap = new VideoCapture ("Exa.mp4");
@@ -87,7 +17,9 @@ int main()
 	int V_Slider = 0;
 	int Sli_Thre_V = 145;
 
-	int Sli_thre1 = 75, Sli_thre2 = 500;
+	int Sli_thre1 = 250, Sli_thre2 = 500;
+	int Hough_Thre = 89;
+	int Sli_find_dense = 17;
 	while (1)
 	{
 		Mat frame;
@@ -98,24 +30,84 @@ int main()
 			VideoCapture* cap = new VideoCapture("Exa.mp4");
 			continue;
 		}
-		Mat image = colorReduce(frame,1);
-		imshow("origin", frame);
-		//imshow("reduce", image);
+		Mat image = colorReduce(frame,32);
+		//imshow("origin", frame);
+		imshow("reduce", image);
 
 		Mat Gray_img;
 		cvtColor(image,Gray_img, COLOR_RGB2GRAY);
-		blur(Gray_img, Gray_img, Size(3, 3));
+		blur(Gray_img, Gray_img, Size(3,3));
 		//imshow("Gray", Gray_img);
 		vector<vector<Point>> contours;
 		Mat img_output;
 		namedWindow("canny");
-		createTrackbar("thre1","canny",  &Sli_thre1,500, Callback_Canny1);
-		Callback_Canny1(Sli_thre1, NULL);
-		createTrackbar("thre2","canny",  &Sli_thre2, 500, Callback_Canny2);
-		Callback_Canny2(Sli_thre2, NULL);
+		createTrackbar("thre1","canny",  &Sli_thre1,500, Callback_empty);
+		Callback_empty(Sli_thre1, NULL);
+		createTrackbar("thre2","canny",  &Sli_thre2, 500, Callback_empty);
+		Callback_empty(Sli_thre2, NULL);
 		Canny(Gray_img, img_output, getTrackbarPos("thre1","canny"), getTrackbarPos("thre2", "canny"), 3);
 		imshow("canny", img_output);
-		cout << getTrackbarPos("thre1", "canny") << ' ' << getTrackbarPos("thre2", "canny") << endl;
+
+		vector<Vec2f> lines,lines_perp;
+		namedWindow("HoughLines");
+		createTrackbar("Hough", "HoughLines", &Hough_Thre, 500, Callback_empty);
+		HoughLines(img_output, lines, 1, CV_PI / 180, getTrackbarPos("Hough","HoughLines"), 0, 0);
+		for (size_t i = 0; i < lines.size(); ++i)
+		{
+			float rho = lines[i][0], theta = lines[i][1];
+			const int i_error_theta = 8;
+			if(!(theta / CV_PI * 180 <i_error_theta|| theta / CV_PI * 180 >180- i_error_theta ||(theta / CV_PI * 180 >90- i_error_theta && theta / CV_PI * 180<90+ i_error_theta)))
+			{
+				continue;
+			}
+			lines_perp.push_back(lines.at(i));
+			Point pt1, pt2;
+			double a = cos(theta), b = sin(theta);
+			double x0 = a * rho, y0 = b * rho;
+			pt1.x = cvRound(x0 + 1000 * (-b));
+			pt1.y = cvRound(y0 + 1000 * (a));
+			pt2.x = cvRound(x0 - 1000 * (-b));
+			pt2.y = cvRound(y0 - 1000 * (a));
+			line(img_output, pt1, pt2, Scalar(55, 100, 195), 1, LINE_AA);
+			//cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
+		} 
+		cout << "________________________________________________" <<lines_perp.size()<< endl;
+
+		vector<int> lines_col,lines_row;
+		vector<double> lines_fin;
+		vector<double> buf_fin(img_output.cols, 0);
+		Mat lines_show(500,500,CV_8UC3,Scalar(0,0,0));
+		for (size_t i = 1; i < lines_perp.size(); ++i)
+		{
+			if (lines_perp[i][1] > 0.78&&lines_perp[i][1]<2.36)//45度
+				lines_col.push_back(ABS(lines_perp[i][0]));
+			else
+				lines_row.push_back(ABS(lines_perp[i][0]));
+			//circle(lines_show, Point((double)(lines_perp[i][0]) / img_output.rows * 500, (lines_perp[i][1] <=0.78 ? 100 : 250)), 0.5, Scalar(255, 255, 255), -1, 1);
+
+		}
+
+		sort(lines_col.begin(), lines_col.end());
+		for (size_t i = 0; i < lines_col.size(); ++i)
+			circle(lines_show, Point((double)(lines_col[i]) / img_output.rows * 500, 50), 0.5, Scalar(255, 255, 255), -1, 1);
+		sort(lines_row.begin(), lines_row.end());
+			
+
+		namedWindow("lines_prep_show");
+		createTrackbar("R", "lines_prep_show", &Sli_find_dense, img_output.cols/5 , Callback_empty);
+		//lines_fin = find_dense_point(lines_col, buf_fin, getTrackbarPos("R", "lines_prep_show"));
+		vector<double> buf = find_dense_point(lines_col, buf_fin, getTrackbarPos("R", "lines_prep_show"));
+		for (size_t i = 0; i < img_output.cols; ++i)
+		{
+			circle(lines_show, Point(double(i) / img_output.rows * 500, buf[i] * 10), 0.5, Scalar(0, 0, 255), -1, 1);
+			//circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
+		}
+		cout << lines_fin.size() << "asadadsdada" << endl;
+		imshow("lines_prep_show", lines_show);
+
+
+		imshow("HoughLines", img_output);
+		
 		//Mat HSV_img;
 		//cvtColor(image, HSV_img, COLOR_RGB2HSV);
 		//imshow("HSV", HSV_img);
@@ -157,9 +149,4 @@ int main()
 	delete cap;
 	waitKey(0);
 }
-
-//TODO: 分文件！！！
-// 1. magic number 的计算
-// 2. 图片范围的识别
-// 3.
 
