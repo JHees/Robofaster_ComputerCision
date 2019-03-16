@@ -95,16 +95,16 @@ vector<double> find_dense_point(const vector<int>& lines, vector<double>& fin,in
 			++fin[j];
 		}
 	}
-	vector<double> buf_fin;
-	const int fuzzy = 5;
-	for (size_t i = 0; i < fin.size(); ++i)
-	{
-		double buf = 0;
-		for (size_t j = i - fuzzy/2 > 0 ? i -fuzzy/2 : 0; j < i + fuzzy/2 && j < fin.size(); ++j)
-		{
-			 buf += fin[j];
-		}
-		buf_fin.push_back(buf / fuzzy);
-	}
+	//vector<double> buf_fin;
+	//const int fuzzy = 5;
+	//for (size_t i = 0; i < fin.size(); ++i)
+	//{
+	//	double buf = 0;
+	//	for (size_t j = i - fuzzy/2 > 0 ? i -fuzzy/2 : 0; j < i + fuzzy/2 && j < fin.size(); ++j)
+	//	{
+	//		 buf += fin[j];
+	//	}
+	//	buf_fin.push_back(buf / fuzzy);
+	//}
 	return buf_fin;
 }
