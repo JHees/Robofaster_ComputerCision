@@ -133,32 +133,64 @@ vector<va_ptr> find_dense_point(const vector<int>& lines, vector<double>& fin,in
 		//	continue;
 		//}
 		//else
-		buf.push_back(va_ptr(lines[i + 1] - lines[i], i + 1));
+		buf.push_back(va_ptr(lines[i + 1] - lines[i], i));
 	}
 	sort(buf.begin(), buf.end());
 
 
 
 	vector<va_ptr> buf2;
-	for (size_t i = 0; i < buf.size()-1; ++i)
+	for (size_t i = 0; i < buf.size() - 1; ++i)
 	{
-			buf2.push_back(va_ptr(buf[i + 1].value - buf[i].value, i));
+		buf2.push_back(va_ptr(buf[i + 1].value - buf[i].value, i));
 	}
-	sort(buf2.begin(), buf2.end());
-	int ptr =buf2.back().ptr;
 
+
+	sort(buf2.begin(), buf2.end());
+	for (size_t i = 0; i < buf2.size(); ++i)
+	{
+		//cout <<  '(' <<i<<','<< buf2[i].ptr<<','<< buf2[i].value <<") ";
+		//circle(lines_show, Point(double(i+1) / buf.size() * 500, buf2[i].value * 5), 2, Scalar(51, 255, 233), -1, 1);
+	}
+	//cout << endl;
+
+	vector<va_ptr> buf3;
+	for (size_t i = 0; i < buf2.size() - 1; ++i)
+	{
+		
+		buf3.push_back(va_ptr(buf2[i + 1].value - buf2[i].value, i));
+	}
+
+	sort(buf3.begin(), buf3.end());
+	for (size_t i = 0; i < buf3.size(); ++i)
+	{
+		//cout << '(' << i << ',' << buf3[i].ptr << ',' << buf3[i].value << ") ";
+		//circle(lines_show, Point(double(i+2) / buf.size() * 500, buf3[i].value * 5), 2, Scalar(255, 191, 51), -1, 1);
+	}
+	
+	int ptr =buf3.back().ptr+1;
+	//cout << endl<<ptr<<endl;
+	if(ptr<buf2.size())
+	for (size_t i = ptr; i < buf2.size(); ++i)
+	{
+		if (buf2[ptr].ptr > buf2[i].ptr)
+		{
+			ptr = i;
+		}
+	}
+	ptr=buf2[ptr].ptr+1;
+	//cout << ptr << endl;
 	for (size_t i = 0; i < buf.size(); ++i)
 	{
-		if (i > ptr)
-		//{
-		//	circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value), 3, Scalar(255, 0, 0), -1, 1);
+		if (i >= ptr)
+		{
+			//circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value*5), 2, Scalar(255, 0, 0), -1, 1);
 			ret.push_back(buf[i]);
-		//}
-		//	
-		//else
-		//	circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value), 3, Scalar(0, 0, 255), -1, 1);
-		//cout << buf[i].value << ' ';
-
+		}
+		else
+			//circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value*5), 2, Scalar(0, 0, 255), -1, 1);
+		//cout << '(' << i << ',' << buf[i].ptr << ',' << buf[i].value << ") ";
 	}
+	//cout << endl;
 	return ret;
 }

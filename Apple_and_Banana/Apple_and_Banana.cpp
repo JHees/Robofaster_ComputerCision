@@ -20,16 +20,17 @@ int main()
 	int Sli_thre1 = 250, Sli_thre2 = 500;
 	int Hough_Thre = 89;
 	int Sli_find_dense = 17;
+
 	while (1)
 	{
 		Mat frame;
 		*cap >> frame; 
-		//if (frame.data == NULL) 
-		//{
-		//	delete cap;
-		//	VideoCapture* cap = new VideoCapture("Exa.mp4");
-		//	continue;
-		//}
+		if (frame.data == NULL) 
+		{
+			delete cap;
+			VideoCapture* cap = new VideoCapture("Exa.mp4");
+			continue;
+		}
 		Mat image = colorReduce(frame,32);
 		//imshow("origin", frame);
 		imshow("reduce", image);
@@ -71,7 +72,7 @@ int main()
 			line(img_output, pt1, pt2, Scalar(55, 100, 195), 1, LINE_AA);
 			//cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
 		} 
-		cout << "________________________________________________" <<lines_perp.size()<< endl;
+		//cout << "________________________________________________" <<lines_perp.size()<< endl;
 
 		vector<int> lines_col,lines_row;
 		vector<double> lines_fin;
@@ -99,15 +100,16 @@ int main()
 		vector<va_ptr> buf = find_dense_point(lines_col, buf_fin, getTrackbarPos("R", "lines_prep_show"), lines_show);
 		for (size_t i = 0; i < buf.size(); ++i)
 		{
-			circle(lines_show, Point((double)(lines_col[buf[i].ptr]) / img_output.rows * 500, 50), 3, Scalar(0, 0, 200), -1, 1);
-			cout << buf[i].value << ' ';
+			circle(lines_show, Point((double)(lines_col[buf[i].ptr]) / img_output.rows * 500, 50), 3, Scalar(51, 255, 91), -1, 1);
+			//cout << buf[i].value << "! ";
 			//circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
 		}
-		cout << lines_fin.size() << "asadadsdada" << endl;
+		//cout << lines_fin.size() << "asadadsdada" << endl;
 		imshow("lines_prep_show", lines_show);
-
+	
 
 		imshow("HoughLines", img_output);
+		if (buf.size() != 3)waitKey(0);
 		
 		//Mat HSV_img;
 		//cvtColor(image, HSV_img, COLOR_RGB2HSV);
