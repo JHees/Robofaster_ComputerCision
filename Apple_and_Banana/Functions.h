@@ -10,7 +10,20 @@ constexpr auto ABS(T x) { return ((x) > 0 ? (x) :(0-x)); }
 
 using namespace cv;
 using namespace std;
+class va_ptr
+{
+public:
+	va_ptr() {};
+	va_ptr(int va, int ptr) :value(va), ptr(ptr) {};
 
+	int value;
+	int ptr;
+
+	bool operator<(va_ptr va)
+	{
+		return value < va.value;
+	}
+};
 Mat colorReduce(const Mat& input, int div)
 {
 	Mat output = input.clone();
@@ -81,9 +94,9 @@ void Callback_empty(int tra, void* ptr)
 }
 
 
-vector<double> find_dense_point(const vector<int>& lines, vector<double>& fin,int tra)
+vector<va_ptr> find_dense_point(const vector<int>& lines, vector<double>& fin,int tra,Mat& lines_show)
 {
-	vector<double> ret;
+	vector<va_ptr> ret;
 	for (size_t i = 0; i < lines.size(); ++i)
 	{
 		for (size_t j = (lines[i] - tra) > 0 ? lines[i] - tra : 0; j <= lines[i] + tra && j < fin.size(); ++j)
@@ -106,5 +119,46 @@ vector<double> find_dense_point(const vector<int>& lines, vector<double>& fin,in
 	//	}
 	//	buf_fin.push_back(buf / fuzzy);
 	//}
-	return buf_fin;
+	vector<va_ptr> buf;
+	for (size_t i = 0; i < lines.size()-1; ++i)
+	{
+		//if (!i)
+		//{
+		//	buf.push_back(va_ptr(lines[0],0));
+		//	continue;
+		//}
+		//if (i == lines.size() - 1)
+		//{
+		//	buf.push_back(va_ptr(fin.size() - lines[i], i + 2));
+		//	continue;
+		//}
+		//else
+		buf.push_back(va_ptr(lines[i + 1] - lines[i], i + 1));
+	}
+	sort(buf.begin(), buf.end());
+
+
+
+	vector<va_ptr> buf2;
+	for (size_t i = 0; i < buf.size()-1; ++i)
+	{
+			buf2.push_back(va_ptr(buf[i + 1].value - buf[i].value, i));
+	}
+	sort(buf2.begin(), buf2.end());
+	int ptr =buf2.back().ptr;
+
+	for (size_t i = 0; i < buf.size(); ++i)
+	{
+		if (i > ptr)
+		//{
+		//	circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value), 3, Scalar(255, 0, 0), -1, 1);
+			ret.push_back(buf[i]);
+		//}
+		//	
+		//else
+		//	circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value), 3, Scalar(0, 0, 255), -1, 1);
+		//cout << buf[i].value << ' ';
+
+	}
+	return ret;
 }

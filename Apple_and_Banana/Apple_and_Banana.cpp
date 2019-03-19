@@ -24,12 +24,12 @@ int main()
 	{
 		Mat frame;
 		*cap >> frame; 
-		if (frame.data == NULL) 
-		{
-			delete cap;
-			VideoCapture* cap = new VideoCapture("Exa.mp4");
-			continue;
-		}
+		//if (frame.data == NULL) 
+		//{
+		//	delete cap;
+		//	VideoCapture* cap = new VideoCapture("Exa.mp4");
+		//	continue;
+		//}
 		Mat image = colorReduce(frame,32);
 		//imshow("origin", frame);
 		imshow("reduce", image);
@@ -89,17 +89,18 @@ int main()
 
 		sort(lines_col.begin(), lines_col.end());
 		for (size_t i = 0; i < lines_col.size(); ++i)
-			circle(lines_show, Point((double)(lines_col[i]) / img_output.rows * 500, 50), 0.5, Scalar(255, 255, 255), -1, 1);
+			circle(lines_show, Point((double)(lines_col[i]) / img_output.rows * 500, 50), 1, Scalar(255, 255, 255), -1, 1);
 		sort(lines_row.begin(), lines_row.end());
 			
 
 		namedWindow("lines_prep_show");
 		createTrackbar("R", "lines_prep_show", &Sli_find_dense, img_output.cols/5 , Callback_empty);
 		//lines_fin = find_dense_point(lines_col, buf_fin, getTrackbarPos("R", "lines_prep_show"));
-		vector<double> buf = find_dense_point(lines_col, buf_fin, getTrackbarPos("R", "lines_prep_show"));
-		for (size_t i = 0; i < img_output.cols; ++i)
+		vector<va_ptr> buf = find_dense_point(lines_col, buf_fin, getTrackbarPos("R", "lines_prep_show"), lines_show);
+		for (size_t i = 0; i < buf.size(); ++i)
 		{
-			circle(lines_show, Point(double(i) / img_output.rows * 500, buf[i] * 10), 0.5, Scalar(0, 0, 255), -1, 1);
+			circle(lines_show, Point((double)(lines_col[buf[i].ptr]) / img_output.rows * 500, 50), 3, Scalar(0, 0, 200), -1, 1);
+			cout << buf[i].value << ' ';
 			//circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
 		}
 		cout << lines_fin.size() << "asadadsdada" << endl;
