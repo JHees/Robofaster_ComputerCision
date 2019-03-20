@@ -4,9 +4,8 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include<vector>
+#include<math.h>
 
-template<typename T>
-constexpr auto ABS(T x) { return ((x) > 0 ? (x) :(0-x)); }
 
 using namespace cv;
 using namespace std;
@@ -14,10 +13,10 @@ class va_ptr
 {
 public:
 	va_ptr() {};
-	va_ptr(int va, int ptr) :value(va), ptr(ptr) {};
+	va_ptr(double va, double ptr) :value(va), ptr(ptr) {};
 
-	int value;
-	int ptr;
+	double value;
+	double ptr;
 
 	bool operator<(va_ptr va)
 	{
@@ -94,64 +93,26 @@ void Callback_empty(int tra, void* ptr)
 }
 
 
-vector<va_ptr> find_dense_point(const vector<int>& lines, vector<double>& fin,int tra,Mat& lines_show)
+vector<va_ptr> find_dense_point(const vector<va_ptr>& lines,Mat& img_canny,Mat& lines_show)
 {
 	vector<va_ptr> ret;
-	for (size_t i = 0; i < lines.size(); ++i)
-	{
-		for (size_t j = (lines[i] - tra) > 0 ? lines[i] - tra : 0; j <= lines[i] + tra && j < fin.size(); ++j)
-		{
-			++fin[j];
-		}
-		for (size_t j = (lines[i] - tra*2/3) > 0 ? lines[i] - tra*2/3 : 0; j <= lines[i] + tra*2/3 && j < fin.size(); ++j)
-		{
-			++fin[j];
-		}
-	}
-	//vector<double> buf_fin;
-	//const int fuzzy = 5;
-	//for (size_t i = 0; i < fin.size(); ++i)
-	//{
-	//	double buf = 0;
-	//	for (size_t j = i - fuzzy/2 > 0 ? i -fuzzy/2 : 0; j < i + fuzzy/2 && j < fin.size(); ++j)
-	//	{
-	//		 buf += fin[j];
-	//	}
-	//	buf_fin.push_back(buf / fuzzy);
-	//}
 	vector<va_ptr> buf;
 	for (size_t i = 0; i < lines.size()-1; ++i)
 	{
-		//if (!i)
-		//{
-		//	buf.push_back(va_ptr(lines[0],0));
-		//	continue;
-		//}
-		//if (i == lines.size() - 1)
-		//{
-		//	buf.push_back(va_ptr(fin.size() - lines[i], i + 2));
-		//	continue;
-		//}
-		//else
-		buf.push_back(va_ptr(lines[i + 1] - lines[i], i));
+		buf.push_back(va_ptr(lines[i + 1].value - lines[i].value, i));
 	}
 	sort(buf.begin(), buf.end());
-
-
-
 	vector<va_ptr> buf2;
 	for (size_t i = 0; i < buf.size() - 1; ++i)
 	{
 		buf2.push_back(va_ptr(buf[i + 1].value - buf[i].value, i));
 	}
-
-
 	sort(buf2.begin(), buf2.end());
-	for (size_t i = 0; i < buf2.size(); ++i)
-	{
-		//cout <<  '(' <<i<<','<< buf2[i].ptr<<','<< buf2[i].value <<") ";
-		//circle(lines_show, Point(double(i+1) / buf.size() * 500, buf2[i].value * 5), 2, Scalar(51, 255, 233), -1, 1);
-	}
+	//for (size_t i = 0; i < buf2.size(); ++i)
+	//{
+	//	cout <<  '(' <<i<<','<< buf2[i].ptr<<','<< buf2[i].value <<") ";
+	//	circle(lines_show, Point(double(i+1) / buf.size() * 500, buf2[i].value * 5), 2, Scalar(51, 255, 233), -1, 1);
+	//}
 	//cout << endl;
 
 	vector<va_ptr> buf3;
@@ -161,12 +122,12 @@ vector<va_ptr> find_dense_point(const vector<int>& lines, vector<double>& fin,in
 		buf3.push_back(va_ptr(buf2[i + 1].value - buf2[i].value, i));
 	}
 
-	sort(buf3.begin(), buf3.end());
-	for (size_t i = 0; i < buf3.size(); ++i)
-	{
-		//cout << '(' << i << ',' << buf3[i].ptr << ',' << buf3[i].value << ") ";
-		//circle(lines_show, Point(double(i+2) / buf.size() * 500, buf3[i].value * 5), 2, Scalar(255, 191, 51), -1, 1);
-	}
+    sort(buf3.begin(), buf3.end());
+	//for (size_t i = 0; i < buf3.size(); ++i)
+	//{
+	//	cout << '(' << i << ',' << buf3[i].ptr << ',' << buf3[i].value << ") ";
+	//	circle(lines_show, Point(double(i+2) / buf.size() * 500, buf3[i].value * 5), 2, Scalar(255, 191, 51), -1, 1);
+	//}
 	
 	int ptr =buf3.back().ptr+1;
 	//cout << endl<<ptr<<endl;
@@ -187,10 +148,74 @@ vector<va_ptr> find_dense_point(const vector<int>& lines, vector<double>& fin,in
 			//circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value*5), 2, Scalar(255, 0, 0), -1, 1);
 			ret.push_back(buf[i]);
 		}
-		else
+		//else
 			//circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value*5), 2, Scalar(0, 0, 255), -1, 1);
 		//cout << '(' << i << ',' << buf[i].ptr << ',' << buf[i].value << ") ";
 	}
 	//cout << endl;
+    vector<Vec2d> lines_fin;
+
+    double f_sum_rho = 0, f_sum_theta = 0;
+
+    vector<int> boundary;
+    for (size_t i = 0; i < ret.size(); ++i)
+    {
+        boundary.push_back(ret[i].ptr);
+    }
+    sort(boundary.begin(), boundary.end());
+    for (size_t j = 0; j <= boundary.size(); ++j)
+    {
+
+        for (size_t i = (j == 0 ? 0 : boundary[j - 1] + 1); i <= (j == boundary.size() ? lines.size() - 1 : boundary[j]); ++i)
+        {
+            f_sum_rho += lines[i].value;
+            f_sum_theta += lines[i].ptr;
+        }
+        //(j == boundary.size() ? lines_col.size() - 1 : boundary[j])-(j == 0 ? 0 : boundary[j - 1] + 1)
+        f_sum_rho /= (j == boundary.size() ? lines.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1) + 1;
+        f_sum_theta /= (j == boundary.size() ? lines.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1) + 1;
+        cout << f_sum_rho << ' ' << f_sum_theta << endl;
+        lines_fin.push_back(Vec2d(f_sum_rho, f_sum_theta));
+        f_sum_rho = 0;
+        f_sum_theta = 0;
+    }
+
+    for (size_t i = 0; i < lines_fin.size(); ++i)
+    {
+        double rho = lines_fin[i][0], theta = lines_fin[i][1];
+        if (theta < 0)
+        {
+            theta += CV_PI;
+            rho = -rho;
+        }
+            
+        Point pt1, pt2;
+        double a = cos(theta), b = sin(theta);
+        double x0 = a * rho, y0 = b * rho;
+        pt1.x = cvRound(x0 + 1000 * (-b));
+        pt1.y = cvRound(y0 + 1000 * (a));
+        pt2.x = cvRound(x0 - 1000 * (-b));
+        pt2.y = cvRound(y0 - 1000 * (a));
+        line(img_canny, pt1, pt2, Scalar(55, 100, 195), 2, LINE_AA);
+        //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
+    }
+    for (size_t i = 0; i < lines.size(); ++i)
+    {
+        circle(lines_show, Point((double)(lines[i].value) / img_canny.cols * 500, (double)(lines[i].ptr) <= 0.78 ? 100 : 250), 1, Scalar(255, 255, 255), -1, 1);
+    }
+
+    for (size_t i = 0; i < ret.size(); ++i)
+    {
+        circle(lines_show, Point((double)(lines[ret[i].ptr].value) / img_canny.cols * 500, (double)(lines[ret[i].ptr].ptr) <= 0.78 ? 100 : 250), 2, Scalar(51, 255, 91), -1, 1);
+        //cout << buf[i].value << "! ";
+        //circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
+    }
+
+    for (size_t i = 0; i < lines_fin.size(); ++i)
+    {
+        circle(lines_show, Point((double)(lines_fin[i][0]) / img_canny.cols * 500, (double)(lines_fin[i][1]) <= 0.78 ? 100 : 250), 3, Scalar(0, 0, 255), -1, 1);
+    }
 	return ret;
 }
+
+

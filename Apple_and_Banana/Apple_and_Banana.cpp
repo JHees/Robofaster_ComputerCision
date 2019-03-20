@@ -12,25 +12,45 @@ using namespace std;
 
 int main()
 {
-	VideoCapture* cap = new VideoCapture ("Exa.mp4");
+	VideoCapture cap("Exa.mp4");
+	int frames=cap.get(CAP_PROP_FRAME_COUNT);
+	int n=0;
+
 	int S_Thre_Slider_APPLE =113;//171
 	int V_Slider = 0;
 	int Sli_Thre_V = 145;
 
 	int Sli_thre1 = 250, Sli_thre2 = 500;
-	int Hough_Thre = 89;
-	int Sli_find_dense = 17;
+    int Hough_Thre = 82; //71;80-109
 
+	int ADD_missline = 0;
 	while (1)
 	{
 		Mat frame;
-		*cap >> frame; 
-		if (frame.data == NULL) 
+		cap >> frame;
+		if (n==frames-13) 
 		{
-			delete cap;
-			VideoCapture* cap = new VideoCapture("Exa.mp4");
-			continue;
+			cap.set(CAP_PROP_POS_FRAMES, 0);
+			n = 0;
+			/*cout << Hough_Thre << ": " << ADD_missline << endl;
+			
+			if (Hough_Thre >= 140)
+			{
+				while (1)
+				{
+					string in;
+					cin >> in;
+					if(in=="break")
+						break;
+				}
+                break;
+				
+			}
+			ADD_missline = 0;
+			Hough_Thre++;
+			continue;*/
 		}
+		n++;
 		Mat image = colorReduce(frame,32);
 		//imshow("origin", frame);
 		imshow("reduce", image);
@@ -47,8 +67,8 @@ int main()
 		createTrackbar("thre2","canny",  &Sli_thre2, 500, Callback_empty);
 		Callback_empty(Sli_thre2, NULL);
 		Canny(Gray_img, img_output, getTrackbarPos("thre1","canny"), getTrackbarPos("thre2", "canny"), 3);
-		imshow("canny", img_output);
-
+        imshow("canny", img_output);
+        Mat img_canny = img_output.clone();
 		vector<Vec2f> lines,lines_perp;
 		namedWindow("HoughLines");
 		createTrackbar("Hough", "HoughLines", &Hough_Thre, 500, Callback_empty);
@@ -72,44 +92,91 @@ int main()
 			line(img_output, pt1, pt2, Scalar(55, 100, 195), 1, LINE_AA);
 			//cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
 		} 
-		//cout << "________________________________________________" <<lines_perp.size()<< endl;
+		cout << "________________________________________________" << endl;
 
-		vector<int> lines_col,lines_row;
-		vector<double> lines_fin;
+		vector<va_ptr> lines_col,lines_row;
+        
 		vector<double> buf_fin(img_output.cols, 0);
 		Mat lines_show(500,500,CV_8UC3,Scalar(0,0,0));
-		for (size_t i = 1; i < lines_perp.size(); ++i)
+		for (size_t i = 0; i < lines_perp.size(); ++i)
 		{
-			if (lines_perp[i][1] > 0.78&&lines_perp[i][1]<2.36)//45度
-				lines_col.push_back(ABS(lines_perp[i][0]));
+            if (lines_perp[i][1] > 0.78&&lines_perp[i][1] < 2.36)//45度
+            {
+                lines_col.push_back(va_ptr(abs(lines_perp[i][0]), lines_perp[i][1]));
+               
+            }
 			else
-				lines_row.push_back(ABS(lines_perp[i][0]));
+				lines_row.push_back(va_ptr(abs(lines_perp[i][0]), lines_perp[i][1]>1.7?-CV_PI+lines_perp[i][1]:lines_perp[i][1]));
 			//circle(lines_show, Point((double)(lines_perp[i][0]) / img_output.rows * 500, (lines_perp[i][1] <=0.78 ? 100 : 250)), 0.5, Scalar(255, 255, 255), -1, 1);
 
 		}
-
+        
+        if (lines_col.size() <= 3)continue;
 		sort(lines_col.begin(), lines_col.end());
-		for (size_t i = 0; i < lines_col.size(); ++i)
-			circle(lines_show, Point((double)(lines_col[i]) / img_output.rows * 500, 50), 1, Scalar(255, 255, 255), -1, 1);
-		sort(lines_row.begin(), lines_row.end());
-			
 
-		namedWindow("lines_prep_show");
-		createTrackbar("R", "lines_prep_show", &Sli_find_dense, img_output.cols/5 , Callback_empty);
-		//lines_fin = find_dense_point(lines_col, buf_fin, getTrackbarPos("R", "lines_prep_show"));
-		vector<va_ptr> buf = find_dense_point(lines_col, buf_fin, getTrackbarPos("R", "lines_prep_show"), lines_show);
-		for (size_t i = 0; i < buf.size(); ++i)
-		{
-			circle(lines_show, Point((double)(lines_col[buf[i].ptr]) / img_output.rows * 500, 50), 3, Scalar(51, 255, 91), -1, 1);
-			//cout << buf[i].value << "! ";
-			//circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
-		}
-		//cout << lines_fin.size() << "asadadsdada" << endl;
+			
+		sort(lines_row.begin(), lines_row.end());
+	    	
+
+
+		//vector<va_ptr> buf = find_dense_point(lines_col, img_canny);
+        find_dense_point(lines_col, img_canny,lines_show);
+        find_dense_point(lines_row, img_canny,lines_show);
+  ////      vector<Vec2d> lines_fin;
+
+  ////      double f_sum_rho = 0, f_sum_theta = 0;
+  //// 
+  ////      vector<int> boundary;
+  ////      for (size_t i = 0; i < buf.size(); ++i)
+  ////      {
+  ////          boundary.push_back(buf[i].ptr);
+  ////      }
+  ////      sort(boundary.begin(), boundary.end());
+  ////      for (size_t j = 0; j <= boundary.size(); ++j)
+  ////      {
+
+  ////          for (size_t i = (j == 0 ? 0 : boundary[j - 1]+1); i <= (j== boundary.size()?lines_col.size()-1: boundary[j]); ++i)
+  ////          {
+  ////              f_sum_rho += lines_col[i].value;
+  ////              f_sum_theta += lines_col[i].ptr;
+  ////          }     
+  ////          //(j == boundary.size() ? lines_col.size() - 1 : boundary[j])-(j == 0 ? 0 : boundary[j - 1] + 1)
+  ////          f_sum_rho /= (j == boundary.size() ? lines_col.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1)+1;
+  ////          f_sum_theta /= (j == boundary.size() ? lines_col.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1)+1;
+  ////          cout << f_sum_rho << ' ' << f_sum_theta << ' '<<n<<endl;
+  ////          lines_fin.push_back(Vec2d(f_sum_rho, f_sum_theta));
+  ////          f_sum_rho = 0;
+  ////          f_sum_theta = 0;
+  ////      }
+
+  ////      for (size_t i = 0; i < lines_fin.size(); ++i)
+  ////      {
+  ////          double rho = lines_fin[i][0], theta = lines_fin[i][1];
+
+  ////          Point pt1, pt2;
+  ////          double a = cos(theta), b = sin(theta);
+  ////          double x0 = a * rho, y0 = b * rho;
+  ////          pt1.x = cvRound(x0 + 1000 * (-b));
+  ////          pt1.y = cvRound(y0 + 1000 * (a));
+  ////          pt2.x = cvRound(x0 - 1000 * (-b));
+  ////          pt2.y = cvRound(y0 - 1000 * (a));
+  ////          line(img_canny, pt1, pt2, Scalar(55, 100, 195), 2, LINE_AA);
+  ////          //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
+  ////      }
+        imshow("boundary", img_canny);
+
+
+
 		imshow("lines_prep_show", lines_show);
 	
 
 		imshow("HoughLines", img_output);
-		if (buf.size() != 3)waitKey(0);
+
+		//if (buf.size() != 3)
+		//{
+		//	ADD_missline++;
+		//	//waitKey();
+		//}
 		
 		//Mat HSV_img;
 		//cvtColor(image, HSV_img, COLOR_RGB2HSV);
@@ -147,9 +214,6 @@ int main()
 		waitKey(30);
 	}
 
-
-
-	delete cap;
 	waitKey(0);
 }
 
