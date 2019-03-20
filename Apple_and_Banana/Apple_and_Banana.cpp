@@ -95,8 +95,6 @@ int main()
 		cout << "________________________________________________" << endl;
 
 		vector<va_ptr> lines_col,lines_row;
-        
-		vector<double> buf_fin(img_output.cols, 0);
 		Mat lines_show(500,500,CV_8UC3,Scalar(0,0,0));
 		for (size_t i = 0; i < lines_perp.size(); ++i)
 		{
@@ -113,15 +111,28 @@ int main()
         
         if (lines_col.size() <= 3)continue;
 		sort(lines_col.begin(), lines_col.end());
-
-			
 		sort(lines_row.begin(), lines_row.end());
 	    	
 
 
 		//vector<va_ptr> buf = find_dense_point(lines_col, img_canny);
-        find_dense_point(lines_col, img_canny,lines_show);
-        find_dense_point(lines_row, img_canny,lines_show);
+        vector<Vec2d> lines_fin_col = find_dense_point(lines_col, img_canny, lines_show);
+        vector<Vec2d> lines_fin_row = find_dense_point(lines_row, img_canny, lines_show);
+        Vec2d lines_fin_col_cen, lines_fin_row_cen;
+        for (size_t i = 0; i < lines_fin_col.size(); ++i)
+        {
+            lines_fin_col_cen[0] += lines_fin_col[i][0] / lines_fin_col.size();
+            lines_fin_col_cen[1] += lines_fin_col[i][1] / lines_fin_col.size();
+        }
+        for (size_t i = 0; i < lines_fin_row.size(); ++i)
+        {
+            lines_fin_row_cen[0] += (lines_fin_row[i][1] > 1.7 ? -lines_fin_row[i][0]: -lines_fin_row[i][0]) / lines_fin_row.size();
+            lines_fin_row_cen[1] += (lines_fin_row[i][1] > 1.7 ? -CV_PI + lines_fin_row[i][1] : lines_fin_row[i][1]) / lines_fin_row.size();
+        }
+        double& rho1 = lines_fin_col_cen[0], theta1 = lines_fin_col_cen[1];
+        double& rho2 = lines_fin_row_cen[0], theta2 = lines_fin_row_cen[1];
+        Point2d center((rho2*sin(theta1) - rho1 * sin(theta2)) / sin(theta2 - theta1), (rho2*cos(theta1) - rho1 * cos(theta2) / sin(theta2 - theta1)));
+
   ////      vector<Vec2d> lines_fin;
 
   ////      double f_sum_rho = 0, f_sum_theta = 0;
@@ -163,6 +174,9 @@ int main()
   ////          line(img_canny, pt1, pt2, Scalar(55, 100, 195), 2, LINE_AA);
   ////          //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
   ////      }
+
+        circle(img_canny, center, 5, Scalar(255, 255, 255), -1, 1);
+        cout << center.x << ' ' << center.y << "  center"<<endl;
         imshow("boundary", img_canny);
 
 

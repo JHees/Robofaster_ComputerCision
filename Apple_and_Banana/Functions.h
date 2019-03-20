@@ -9,12 +9,14 @@
 
 using namespace cv;
 using namespace std;
+
+
+
 class va_ptr
 {
 public:
 	va_ptr() {};
 	va_ptr(double va, double ptr) :value(va), ptr(ptr) {};
-
 	double value;
 	double ptr;
 
@@ -23,6 +25,9 @@ public:
 		return value < va.value;
 	}
 };
+
+
+
 Mat colorReduce(const Mat& input, int div)
 {
 	Mat output = input.clone();
@@ -93,7 +98,7 @@ void Callback_empty(int tra, void* ptr)
 }
 
 
-vector<va_ptr> find_dense_point(const vector<va_ptr>& lines,Mat& img_canny,Mat& lines_show)
+vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_canny,Mat& lines_show)
 {
 	vector<va_ptr> ret;
 	vector<va_ptr> buf;
@@ -215,7 +220,7 @@ vector<va_ptr> find_dense_point(const vector<va_ptr>& lines,Mat& img_canny,Mat& 
     {
         circle(lines_show, Point((double)(lines_fin[i][0]) / img_canny.cols * 500, (double)(lines_fin[i][1]) <= 0.78 ? 100 : 250), 3, Scalar(0, 0, 255), -1, 1);
     }
-	return ret;
+	return lines_fin;
 }
 
 
