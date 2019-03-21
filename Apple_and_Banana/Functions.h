@@ -4,6 +4,7 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
 #include<vector>
+#include<queue>
 #include<math.h>
 
 
@@ -72,8 +73,8 @@ void Callback_S_Thre_APPLE(int tra, void* ptr)
     Mat S_Thre;
     Mat* ROI = (Mat*)ptr;
     threshold((*ROI), S_Thre, tra, 255, 1);
-    namedWindow("buf", WINDOW_AUTOSIZE);
-    imshow("buf", S_Thre);
+    //namedWindow("buf", WINDOW_AUTOSIZE);
+   // imshow("buf", S_Thre);
     Size S_size(S_Thre.rows, S_Thre.cols);
 
     resize(S_Thre, S_Thre, Size(3, 3), 0, 0, INTER_LINEAR);
@@ -84,7 +85,7 @@ void Callback_S_Thre_APPLE(int tra, void* ptr)
     threshold(S_Thre, S_Thre, 180, 255, 0);
     imshow("S_Threshold_APPLE", S_Thre);
     *ROI = S_Thre;
-    cout << *ROI;
+    cout << *ROI<<endl;
 }
 
 void Callback_Thre_V(int tra, void* ptr)
@@ -208,25 +209,25 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
         }
     }
     if(!img_.empty())
-    for (size_t i = 0; i < lines_fin.size(); ++i)
-    {
-        double rho = lines_fin[i][0], theta = lines_fin[i][1];
-        if (theta < 0)
-        {
-            theta += CV_PI;
-            rho = -rho;
-        }
-            
-        Point pt1, pt2;
-        double a = cos(theta), b = sin(theta);
-        double x0 = a * rho, y0 = b * rho;
-        pt1.x = cvRound(x0 + 1000 * (-b));// +center.x;
-        pt1.y = cvRound(y0 + 1000 * (a));// +center.y;
-        pt2.x = cvRound(x0 - 1000 * (-b));// +center.x;
-        pt2.y = cvRound(y0 - 1000 * (a));// +center.y;
-        line(img_, pt1, pt2, Sca, 1, LINE_AA);
-        //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
-    }
+    //for (size_t i = 0; i < lines_fin.size(); ++i)
+    //{
+    //    double rho = lines_fin[i][0], theta = lines_fin[i][1];
+    //    if (theta < 0)
+    //    {
+    //        theta += CV_PI;
+    //        rho = -rho;
+    //    }
+    //        
+    //    Point pt1, pt2;
+    //    double a = cos(theta), b = sin(theta);
+    //    double x0 = a * rho, y0 = b * rho;
+    //    pt1.x = cvRound(x0 + 1000 * (-b));// +center.x;
+    //    pt1.y = cvRound(y0 + 1000 * (a));// +center.y;
+    //    pt2.x = cvRound(x0 - 1000 * (-b));// +center.x;
+    //    pt2.y = cvRound(y0 - 1000 * (a));// +center.y;
+    //    line(img_, pt1, pt2, Sca, 1, LINE_AA);
+    //    //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
+    //}
 
     //for (size_t i = 0; i < lines.size(); ++i)
     //{
@@ -249,3 +250,34 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
 }
 
 
+void ret_output(Mat& img, const vector<Point>&p, int ret)
+{
+    if (ret == 0)
+    {
+
+        cout << "unknown" << endl;
+        Mat img_ret = imread("unknown.png");
+        Mat mask = imread("unknown.png", 0);
+        Mat imgROI = img(Rect(1, 1, img_ret.cols, img_ret.rows));
+        img_ret.copyTo(imgROI, mask);
+        return;
+    }
+        
+    --ret;
+    //Rect R(p[ret/3*4+ret%3],p[ret / 3 * 4 + ret % 3+5]);
+    //rectangle(img, R, Scalar(0, 0, 255), 3);// int lineType = 8, int shift = 0)
+    Point c(abs(p[ret / 3 * 4 + ret % 3].x + p[ret / 3 * 4 + ret % 3 + 5].x) / 2, abs(p[ret / 3 * 4 + ret % 3].y + p[ret / 3 * 4 + ret % 3 + 5].y) / 2);
+    Size s(abs(p[ret / 3 * 4 + ret % 3].x - p[ret / 3 * 4 + ret % 3 + 5].x) / 2, abs(p[ret / 3 * 4 + ret % 3].y - p[ret / 3 * 4 + ret % 3 + 5].y) / 2);
+    ellipse(img, c, s, 0,0, 360, Scalar(0, 0, 255), 3);
+   
+    string img_ret_filename;
+    img_ret_filename.push_back(ret + '0'+1);
+    img_ret_filename += ".png";
+    cout << img_ret_filename << endl;
+    Mat img_ret = imread(img_ret_filename);
+    Mat mask = imread(img_ret_filename, 0);
+    Mat imgROI = img(Rect(1,1, mask.cols, mask.rows));
+    img_ret.copyTo(imgROI , mask);
+
+  
+}

@@ -24,6 +24,9 @@ int main()
     int Hough_Thre = 82; //71;80-109
 
 	int ADD_missline = 0;
+    const int BUFFER_SIZE = 3;
+    deque<int> buffer(BUFFER_SIZE, 0);
+    int ret_last = 0;
 	while (1)
 	{
 		Mat frame;
@@ -53,7 +56,7 @@ int main()
 		n++;
 		Mat image = colorReduce(frame,32);
 		//imshow("origin", frame);
-		imshow("reduce", image);
+		//imshow("reduce", image);
 
 		Mat Gray_img;
 		cvtColor(image,Gray_img, COLOR_RGB2GRAY);
@@ -67,7 +70,7 @@ int main()
 		createTrackbar("thre2","canny",  &Sli_thre2, 500, Callback_empty);
 		Callback_empty(Sli_thre2, NULL);
 		Canny(Gray_img, img_output, getTrackbarPos("thre1","canny"), getTrackbarPos("thre2", "canny"), 3);
-        imshow("canny", img_output);
+       // imshow("canny", img_output);
         Mat img_canny = img_output.clone();
 		vector<Vec2f> lines,lines_perp;
 		namedWindow("HoughLines");
@@ -151,13 +154,51 @@ int main()
         circle(img_canny, center, 5, Scalar(255, 255, 255), -1, 1);
        // cout << center.x << ' ' << center.y << "  center" << endl;
 
-        imshow("origin", frame);
 
-        imshow("boundary", img_canny);
+            double rho = lines_fin_col[0][0], theta = lines_fin_col[0][1];
+            Point pt1, pt2;
+            double a = cos(theta), b = sin(theta);
+            double x0 = a * rho, y0 = b * rho;
+            pt1.x = cvRound(x0 + 1000 * (-b));
+            pt1.y = cvRound(y0 + 1000 * (a));
+            pt2.x = cvRound(x0 - 1000 * (-b));
+            pt2.y = cvRound(y0 - 1000 * (a));
+            line(frame, pt1, pt2, Scalar(0, 255, 0), 1, LINE_AA);
 
-		imshow("lines_prep_show", lines_show);
+             rho = lines_fin_col[3][0], theta = lines_fin_col[3][1];
+             pt1, pt2;
+             a = cos(theta), b = sin(theta);
+             x0 = a * rho, y0 = b * rho;
+            pt1.x = cvRound(x0 + 1000 * (-b));
+            pt1.y = cvRound(y0 + 1000 * (a));
+            pt2.x = cvRound(x0 - 1000 * (-b));
+            pt2.y = cvRound(y0 - 1000 * (a));
+            line(frame, pt1, pt2, Scalar(0, 255, 0), 1, LINE_AA);
+
+             rho = lines_fin_row[0][0], theta = lines_fin_row[0][1];
+             pt1, pt2;
+             a = cos(theta), b = sin(theta);
+             x0 = a * rho, y0 = b * rho;
+            pt1.x = cvRound(x0 + 1000 * (-b));
+            pt1.y = cvRound(y0 + 1000 * (a));
+            pt2.x = cvRound(x0 - 1000 * (-b));
+            pt2.y = cvRound(y0 - 1000 * (a));
+            line(frame, pt1, pt2, Scalar(0, 255, 0), 1, LINE_AA);
+             rho = lines_fin_row[3][0], theta = lines_fin_row[3][1];
+             pt1, pt2;
+             a = cos(theta), b = sin(theta);
+             x0 = a * rho, y0 = b * rho;
+            pt1.x = cvRound(x0 + 1000 * (-b));
+            pt1.y = cvRound(y0 + 1000 * (a));
+            pt2.x = cvRound(x0 - 1000 * (-b));
+            pt2.y = cvRound(y0 - 1000 * (a));
+            line(frame, pt1, pt2, Scalar(0, 255, 0), 1, LINE_AA);
+
+        //imshow("boundary", img_canny);
+
+		//imshow("lines_prep_show", lines_show);
 	
-		imshow("HoughLines", img_output);
+		//imshow("HoughLines", img_output);
 
         double rho_col[4], theta_col[4], rho_row[4], theta_row[4];
         for (size_t i = 0; i < lines_fin_col.size(); ++i)
@@ -170,13 +211,13 @@ int main()
             rho_row[i] = lines_fin_row[i][0];
             theta_row[i] = lines_fin_row[i][1];
         }
-        Point p_crossover[16];
+        vector<Point> p_crossover;
         for (size_t i = 0; i < 4; i++)
         {
             for (size_t j = 0; j < 4; ++j)
             {
-                p_crossover[4*i+j] = Point((rho_row[j] * sin(theta_col[i]) - rho_col[i] * sin(theta_row[j])) / sin(theta_col[i]-theta_row[j]), 
-                                        (rho_row[j] * cos(theta_col[i]) - rho_col[i] * cos(theta_row[j]) / sin(theta_row[j] - theta_col[i])));
+                p_crossover.push_back(Point((rho_row[j] * sin(theta_col[i]) - rho_col[i] * sin(theta_row[j])) / sin(theta_col[i]-theta_row[j]), 
+                                        (rho_row[j] * cos(theta_col[i]) - rho_col[i] * cos(theta_row[j]) / sin(theta_row[j] - theta_col[i]))));
             }
         }
 
@@ -198,12 +239,48 @@ int main()
 		createTrackbar("S_Threshold", "S_Threshold_APPLE", &S_Thre_Slider_APPLE, 255, Callback_S_Thre_APPLE, &cha[0]);
 		Callback_S_Thre_APPLE(S_Thre_Slider_APPLE, &cha[0]);
 
-        
+        Mat img_ret = cha[0].clone();
+        int result = 0;
+        bool flag_ = 0;
+        for (int i = 0; i < img_ret.rows; ++i)
+        {
+            for (int j = 0; j < img_ret.cols; ++j)
+            {
+                if ((img_ret.ptr<uchar>(i)[j]) == 0 && flag_ == 0)
+                {
+                    flag_ = 1;
+                    result = i * img_ret.rows + j + 1;
+                }
+                else if ((img_ret.ptr<uchar>(i)[j]) == 0 && flag_ == 1)
+                {
+                    flag_ = 0;
+                    result = 0;
+                }
+            }
+        }
+
+        buffer.pop_front();
+        buffer.push_back(result);
+        for (size_t i = 0; i < buffer.size()-1; ++i)
+        {
+            if (buffer[i] != buffer[i + 1])
+            {
+                flag_ = 0;
+                break;
+            }
+        }
+        if (flag_&&ret_last!=buffer[0])
+        {
+            ret_last = buffer[0];
+            
+        }
+            ret_output(frame, p_crossover, ret_last);
+            cout << "ret: " << ret_last << endl;
 
 
+        imshow("Robofaster_ret_output", frame);
 
-        
-		waitKey(30);
+		waitKey(10);
 	}
 
 	waitKey(0);
