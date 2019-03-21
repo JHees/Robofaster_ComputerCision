@@ -109,15 +109,18 @@ int main()
 
 		}
         
-        if (lines_col.size() <= 3)continue;
+        if (lines_col.size() <= 3|| lines_row.size() <= 3)continue;
 		sort(lines_col.begin(), lines_col.end());
 		sort(lines_row.begin(), lines_row.end());
 	    	
 
 
 		//vector<va_ptr> buf = find_dense_point(lines_col, img_canny);
-        vector<Vec2d> lines_fin_col = find_dense_point(lines_col, img_canny, lines_show);
-        vector<Vec2d> lines_fin_row = find_dense_point(lines_row, img_canny, lines_show);
+        vector<Vec2d> lines_fin_col = find_dense_point(lines_col, frame, Scalar(0, 0, 255));
+        vector<Vec2d> lines_fin_row = find_dense_point(lines_row, frame, Scalar(0, 0, 255));
+
+        if (lines_fin_col.size() != 4 || lines_fin_row.size() != 4)continue;
+
         Vec2d lines_fin_col_cen, lines_fin_row_cen;
         for (size_t i = 0; i < lines_fin_col.size(); ++i)
         {
@@ -133,50 +136,23 @@ int main()
         double& rho2 = lines_fin_row_cen[0], theta2 = lines_fin_row_cen[1];
         Point2d center((rho2*sin(theta1) - rho1 * sin(theta2)) / sin(theta2 - theta1), (rho2*cos(theta1) - rho1 * cos(theta2) / sin(theta2 - theta1)));
 
-  ////      vector<Vec2d> lines_fin;
-
-  ////      double f_sum_rho = 0, f_sum_theta = 0;
-  //// 
-  ////      vector<int> boundary;
-  ////      for (size_t i = 0; i < buf.size(); ++i)
-  ////      {
-  ////          boundary.push_back(buf[i].ptr);
-  ////      }
-  ////      sort(boundary.begin(), boundary.end());
-  ////      for (size_t j = 0; j <= boundary.size(); ++j)
-  ////      {
-
-  ////          for (size_t i = (j == 0 ? 0 : boundary[j - 1]+1); i <= (j== boundary.size()?lines_col.size()-1: boundary[j]); ++i)
-  ////          {
-  ////              f_sum_rho += lines_col[i].value;
-  ////              f_sum_theta += lines_col[i].ptr;
-  ////          }     
-  ////          //(j == boundary.size() ? lines_col.size() - 1 : boundary[j])-(j == 0 ? 0 : boundary[j - 1] + 1)
-  ////          f_sum_rho /= (j == boundary.size() ? lines_col.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1)+1;
-  ////          f_sum_theta /= (j == boundary.size() ? lines_col.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1)+1;
-  ////          cout << f_sum_rho << ' ' << f_sum_theta << ' '<<n<<endl;
-  ////          lines_fin.push_back(Vec2d(f_sum_rho, f_sum_theta));
-  ////          f_sum_rho = 0;
-  ////          f_sum_theta = 0;
-  ////      }
-
-  ////      for (size_t i = 0; i < lines_fin.size(); ++i)
-  ////      {
-  ////          double rho = lines_fin[i][0], theta = lines_fin[i][1];
-
-  ////          Point pt1, pt2;
-  ////          double a = cos(theta), b = sin(theta);
-  ////          double x0 = a * rho, y0 = b * rho;
-  ////          pt1.x = cvRound(x0 + 1000 * (-b));
-  ////          pt1.y = cvRound(y0 + 1000 * (a));
-  ////          pt2.x = cvRound(x0 - 1000 * (-b));
-  ////          pt2.y = cvRound(y0 - 1000 * (a));
-  ////          line(img_canny, pt1, pt2, Scalar(55, 100, 195), 2, LINE_AA);
-  ////          //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
-  ////      }
+        for (size_t i = 0; i < lines_col.size(); ++i)
+        {
+            lines_col[i].value = lines_col[i].value - sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_col[i].ptr - atan(center.y / center.x));
+        }
+        for (size_t i = 0; i < lines_row.size(); ++i)
+        {
+            lines_row[i].value = lines_row[i].value - sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_row[i].ptr - atan(center.y / center.x));
+        }
+        find_dense_point(lines_col, frame, Scalar(0, 255, 0),center);
+        find_dense_point(lines_row, frame, Scalar(0, 255, 0),center);
 
         circle(img_canny, center, 5, Scalar(255, 255, 255), -1, 1);
-        cout << center.x << ' ' << center.y << "  center"<<endl;
+        cout << center.x << ' ' << center.y << "  center" << endl;
+
+        imshow("origin", frame);
+
+
         imshow("boundary", img_canny);
 
 

@@ -98,7 +98,7 @@ void Callback_empty(int tra, void* ptr)
 }
 
 
-vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_canny,Mat& lines_show)
+vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca, const Point& center=Point(0,0))
 {
 	vector<va_ptr> ret;
 	vector<va_ptr> buf;
@@ -184,42 +184,50 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_canny,Mat& l
         f_sum_rho = 0;
         f_sum_theta = 0;
     }
-
+    //if (center != Point(0, 0))
+    //{
+    //    //for (size_t i = 0; i < lines_fin.size(); ++i)
+    //    //{
+    //    //    lines_fin[i][0] = lines_fin[i][0]+ sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_fin[i][1] - atan(center.y / center.x));
+    //    //}
+    //}
     for (size_t i = 0; i < lines_fin.size(); ++i)
     {
         double rho = lines_fin[i][0], theta = lines_fin[i][1];
-        if (theta < 0)
-        {
-            theta += CV_PI;
-            rho = -rho;
-        }
+        //if (theta < 0)
+        //{
+        //    theta += CV_PI;
+        //    rho = -rho;
+        //}
             
         Point pt1, pt2;
         double a = cos(theta), b = sin(theta);
         double x0 = a * rho, y0 = b * rho;
-        pt1.x = cvRound(x0 + 1000 * (-b));
-        pt1.y = cvRound(y0 + 1000 * (a));
-        pt2.x = cvRound(x0 - 1000 * (-b));
-        pt2.y = cvRound(y0 - 1000 * (a));
-        line(img_canny, pt1, pt2, Scalar(55, 100, 195), 2, LINE_AA);
+        pt1.x = cvRound(x0 + 1000 * (-b))+center.x;
+        pt1.y = cvRound(y0 + 1000 * (a))+center.y;
+        pt2.x = cvRound(x0 - 1000 * (-b))+center.x;
+        pt2.y = cvRound(y0 - 1000 * (a))+center.y;
+        line(img_, pt1, pt2, Sca, 1, LINE_AA);
         //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
     }
-    for (size_t i = 0; i < lines.size(); ++i)
-    {
-        circle(lines_show, Point((double)(lines[i].value) / img_canny.cols * 500, (double)(lines[i].ptr) <= 0.78 ? 100 : 250), 1, Scalar(255, 255, 255), -1, 1);
-    }
 
-    for (size_t i = 0; i < ret.size(); ++i)
-    {
-        circle(lines_show, Point((double)(lines[ret[i].ptr].value) / img_canny.cols * 500, (double)(lines[ret[i].ptr].ptr) <= 0.78 ? 100 : 250), 2, Scalar(51, 255, 91), -1, 1);
-        //cout << buf[i].value << "! ";
-        //circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
-    }
+    //for (size_t i = 0; i < lines.size(); ++i)
+    //{
+    //    circle(lines_show, Point((double)(lines[i].value) / img_canny.cols * 500, (double)(lines[i].ptr) <= 0.78 ? 100 : 250), 1, Scalar(255, 255, 255), -1, 1);
+    //}
 
-    for (size_t i = 0; i < lines_fin.size(); ++i)
-    {
-        circle(lines_show, Point((double)(lines_fin[i][0]) / img_canny.cols * 500, (double)(lines_fin[i][1]) <= 0.78 ? 100 : 250), 3, Scalar(0, 0, 255), -1, 1);
-    }
+    //for (size_t i = 0; i < ret.size(); ++i)
+    //{
+    //    circle(lines_show, Point((double)(lines[ret[i].ptr].value) / img_canny.cols * 500, (double)(lines[ret[i].ptr].ptr) <= 0.78 ? 100 : 250), 2, Scalar(51, 255, 91), -1, 1);
+    //    //cout << buf[i].value << "! ";
+    //    //circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
+    //}
+
+    //for (size_t i = 0; i < lines_fin.size(); ++i)
+    //{
+    //    circle(lines_show, Point((double)(lines_fin[i][0]) / img_canny.cols * 500, (double)(lines_fin[i][1]) <= 0.78 ? 100 : 250), 3, Scalar(0, 0, 255), -1, 1);
+    //}
+
 	return lines_fin;
 }
 
