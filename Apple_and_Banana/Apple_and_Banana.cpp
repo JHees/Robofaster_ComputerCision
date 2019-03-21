@@ -179,6 +179,9 @@ int main()
                                         (rho_row[j] * cos(theta_col[i]) - rho_col[i] * cos(theta_row[j]) / sin(theta_row[j] - theta_col[i])));
             }
         }
+
+
+
         Mat img_ROI = image(Rect(p_crossover[0], p_crossover[15]));
 		Mat HSV_img;
 		cvtColor(img_ROI, HSV_img, COLOR_RGB2HSV);
@@ -190,25 +193,12 @@ int main()
 	//	imshow("S", cha[1]);
 	//	imshow("V", cha[2]);
 
-	//
-
-	//	
-		namedWindow("Thre_V");
-		createTrackbar("Thre_V", "Thre_V", &Sli_Thre_V, 255, Callback_Thre_V, &cha);
-		Callback_Thre_V(Sli_Thre_V, &cha);
-
-	//	
-		namedWindow("After_Callback_V", WINDOW_AUTOSIZE);
-		createTrackbar("V", "After_Callback_V", &V_Slider, 255, Callback_V, &cha);
-		Callback_V(V_Slider, &cha);
-		Mat ROI;
-		merge(cha, ROI);
-		imshow("After_Callback_V", ROI);
 
 		namedWindow("S_Threshold_APPLE",WINDOW_AUTOSIZE);
-		createTrackbar("S_Threshold", "S_Threshold_APPLE", &S_Thre_Slider_APPLE, 255, Callback_S_Thre_APPLE, &ROI);
-		Callback_S_Thre_APPLE(S_Thre_Slider_APPLE, &ROI);
-		//cout << ROI.rows << ' ' << ROI.cols << endl<<ROI;
+		createTrackbar("S_Threshold", "S_Threshold_APPLE", &S_Thre_Slider_APPLE, 255, Callback_S_Thre_APPLE, &cha[0]);
+		Callback_S_Thre_APPLE(S_Thre_Slider_APPLE, &cha[0]);
+
+        
 
 
 

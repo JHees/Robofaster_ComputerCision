@@ -56,20 +56,35 @@ void Callback_V(int tra, void* ptr)
 
 void Callback_S_Thre_APPLE(int tra, void* ptr)
 {
-	Mat S_Thre;
-	Mat* ROI = (Mat*)ptr;
-	threshold((*ROI), S_Thre, tra, 255, 1);
+	//Mat S_Thre;
+	//Mat* ROI = (Mat*)ptr;
+	//threshold((*ROI), S_Thre, tra, 255, 1);
 
 
-	imshow("S_Threshold_APPLE", S_Thre);
+	//imshow("S_Threshold_APPLE", S_Thre);
 
-	vector<Mat> cha_ROI;
-	split(S_Thre, cha_ROI);
-	//imshow("ROI_H", cha_ROI[0]);
-	//imshow("ROI_S", cha_ROI[1]);
-	imshow("ROI_V", cha_ROI[2]);
-	//	*ROI = S_Thre;
+	//vector<Mat> cha_ROI;
+	//split(S_Thre, cha_ROI);
+	////imshow("ROI_H", cha_ROI[0]);
+	////imshow("ROI_S", cha_ROI[1]);
+	//imshow("ROI_V", cha_ROI[2]);
+	////	*ROI = S_Thre;
+    Mat S_Thre;
+    Mat* ROI = (Mat*)ptr;
+    threshold((*ROI), S_Thre, tra, 255, 1);
+    namedWindow("buf", WINDOW_AUTOSIZE);
+    imshow("buf", S_Thre);
+    Size S_size(S_Thre.rows, S_Thre.cols);
 
+    resize(S_Thre, S_Thre, Size(3, 3), 0, 0, INTER_LINEAR);
+    //	resize(S_Thre, S_Thre, Size(S_Thre.rows / 5, S_Thre.cols / 5), 0, 0, INTER_NEAREST);
+
+    	//resize(S_Thre, S_Thre, S_size, 0, 0, INTER_NEAREST);
+
+    threshold(S_Thre, S_Thre, 180, 255, 0);
+    imshow("S_Threshold_APPLE", S_Thre);
+    *ROI = S_Thre;
+    cout << *ROI;
 }
 
 void Callback_Thre_V(int tra, void* ptr)
