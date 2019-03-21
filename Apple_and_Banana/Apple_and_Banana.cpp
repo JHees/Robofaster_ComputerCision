@@ -138,69 +138,81 @@ int main()
 
         for (size_t i = 0; i < lines_col.size(); ++i)
         {
-            lines_col[i].value = lines_col[i].value - sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_col[i].ptr - atan(center.y / center.x));
+            lines_col[i].value = lines_col[i].value - center.x*cos(lines_col[i].ptr) - center.y*sin(lines_col[i].ptr);
         }
         for (size_t i = 0; i < lines_row.size(); ++i)
         {
-            lines_row[i].value = lines_row[i].value - sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_row[i].ptr - atan(center.y / center.x));
+            lines_row[i].value = lines_row[i].value - center.x*cos(lines_row[i].ptr) - center.y*sin(lines_row[i].ptr);
         }
-        find_dense_point(lines_col, frame, Scalar(0, 255, 0),center);
-        find_dense_point(lines_row, frame, Scalar(0, 255, 0),center);
+        lines_fin_col=find_dense_point(lines_col, frame, Scalar(0, 255, 0),center);
+        lines_fin_row=find_dense_point(lines_row, frame, Scalar(0, 255, 0),center);
+
 
         circle(img_canny, center, 5, Scalar(255, 255, 255), -1, 1);
-        cout << center.x << ' ' << center.y << "  center" << endl;
+       // cout << center.x << ' ' << center.y << "  center" << endl;
 
         imshow("origin", frame);
 
-
         imshow("boundary", img_canny);
-
-
 
 		imshow("lines_prep_show", lines_show);
 	
-
 		imshow("HoughLines", img_output);
 
-		//if (buf.size() != 3)
-		//{
-		//	ADD_missline++;
-		//	//waitKey();
-		//}
-		
-		//Mat HSV_img;
-		//cvtColor(image, HSV_img, COLOR_RGB2HSV);
+        double rho_col[4], theta_col[4], rho_row[4], theta_row[4];
+        for (size_t i = 0; i < lines_fin_col.size(); ++i)
+        {
+            rho_col[i] = lines_fin_col[i][0];
+            theta_col[i] = lines_fin_col[i][1];
+        }
+        for (size_t i = 0; i < lines_fin_row.size(); ++i)
+        {
+            rho_row[i] = lines_fin_row[i][0];
+            theta_row[i] = lines_fin_row[i][1];
+        }
+        Point p_crossover[16];
+        for (size_t i = 0; i < 4; i++)
+        {
+            for (size_t j = 0; j < 4; ++j)
+            {
+                p_crossover[4*i+j] = Point((rho_row[j] * sin(theta_col[i]) - rho_col[i] * sin(theta_row[j])) / sin(theta_col[i]-theta_row[j]), 
+                                        (rho_row[j] * cos(theta_col[i]) - rho_col[i] * cos(theta_row[j]) / sin(theta_row[j] - theta_col[i])));
+            }
+        }
+        Mat img_ROI = image(Rect(p_crossover[0], p_crossover[15]));
+		Mat HSV_img;
+		cvtColor(img_ROI, HSV_img, COLOR_RGB2HSV);
 		//imshow("HSV", HSV_img);
 
-	//	std::vector<Mat> cha;
-	//	split(HSV_img, cha);
-	////	imshow("H", cha[0]);
-	////	imshow("S", cha[1]);
-	////	imshow("V", cha[2]);
+		std::vector<Mat> cha;
+		split(HSV_img, cha);
+	//	imshow("H", cha[0]);
+	//	imshow("S", cha[1]);
+	//	imshow("V", cha[2]);
 
 	//
 
 	//	
-	//	namedWindow("Thre_V");
-	//	createTrackbar("Thre_V", "Thre_V", &Sli_Thre_V, 255, Callback_Thre_V, &cha);
-	//	Callback_Thre_V(Sli_Thre_V, &cha);
+		namedWindow("Thre_V");
+		createTrackbar("Thre_V", "Thre_V", &Sli_Thre_V, 255, Callback_Thre_V, &cha);
+		Callback_Thre_V(Sli_Thre_V, &cha);
 
 	//	
-	//	namedWindow("After_Callback_V", WINDOW_AUTOSIZE);
-	//	createTrackbar("V", "After_Callback_V", &V_Slider, 255, Callback_V, &cha);
-	//	Callback_V(V_Slider, &cha);
-	//	Mat ROI;
-	//	merge(cha, ROI);
-	//	imshow("After_Callback_V", ROI);
+		namedWindow("After_Callback_V", WINDOW_AUTOSIZE);
+		createTrackbar("V", "After_Callback_V", &V_Slider, 255, Callback_V, &cha);
+		Callback_V(V_Slider, &cha);
+		Mat ROI;
+		merge(cha, ROI);
+		imshow("After_Callback_V", ROI);
 
-	//	namedWindow("S_Threshold_APPLE",WINDOW_AUTOSIZE);
-	//	createTrackbar("S_Threshold", "S_Threshold_APPLE", &S_Thre_Slider_APPLE, 255, Callback_S_Thre_APPLE, &ROI);
-	//	Callback_S_Thre_APPLE(S_Thre_Slider_APPLE, &ROI);
-	//	//cout << ROI.rows << ' ' << ROI.cols << endl<<ROI;
-
-
+		namedWindow("S_Threshold_APPLE",WINDOW_AUTOSIZE);
+		createTrackbar("S_Threshold", "S_Threshold_APPLE", &S_Thre_Slider_APPLE, 255, Callback_S_Thre_APPLE, &ROI);
+		Callback_S_Thre_APPLE(S_Thre_Slider_APPLE, &ROI);
+		//cout << ROI.rows << ' ' << ROI.cols << endl<<ROI;
 
 
+
+        
 		waitKey(30);
 	}
 

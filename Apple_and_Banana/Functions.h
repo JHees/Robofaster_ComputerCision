@@ -179,34 +179,36 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
         //(j == boundary.size() ? lines_col.size() - 1 : boundary[j])-(j == 0 ? 0 : boundary[j - 1] + 1)
         f_sum_rho /= (j == boundary.size() ? lines.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1) + 1;
         f_sum_theta /= (j == boundary.size() ? lines.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1) + 1;
-        cout << f_sum_rho << ' ' << f_sum_theta << endl;
+       // cout << f_sum_rho << ' ' << f_sum_theta << endl;
         lines_fin.push_back(Vec2d(f_sum_rho, f_sum_theta));
         f_sum_rho = 0;
         f_sum_theta = 0;
     }
-    //if (center != Point(0, 0))
-    //{
-    //    //for (size_t i = 0; i < lines_fin.size(); ++i)
-    //    //{
-    //    //    lines_fin[i][0] = lines_fin[i][0]+ sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_fin[i][1] - atan(center.y / center.x));
-    //    //}
-    //}
+    if (center != Point(0, 0))
+    {
+        for (size_t i = 0; i < lines_fin.size(); ++i)
+        {
+            //lines_fin[i][0] = lines_fin[i][0] + sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_fin[i][1] - atan(center.y / center.x));
+            lines_fin[i][0] = lines_fin[i][0] + center.x*cos(lines_fin[i][1]) + center.y*sin(lines_fin[i][1]);
+        }
+    }
+    if(!img_.empty())
     for (size_t i = 0; i < lines_fin.size(); ++i)
     {
         double rho = lines_fin[i][0], theta = lines_fin[i][1];
-        //if (theta < 0)
-        //{
-        //    theta += CV_PI;
-        //    rho = -rho;
-        //}
+        if (theta < 0)
+        {
+            theta += CV_PI;
+            rho = -rho;
+        }
             
         Point pt1, pt2;
         double a = cos(theta), b = sin(theta);
         double x0 = a * rho, y0 = b * rho;
-        pt1.x = cvRound(x0 + 1000 * (-b))+center.x;
-        pt1.y = cvRound(y0 + 1000 * (a))+center.y;
-        pt2.x = cvRound(x0 - 1000 * (-b))+center.x;
-        pt2.y = cvRound(y0 - 1000 * (a))+center.y;
+        pt1.x = cvRound(x0 + 1000 * (-b));// +center.x;
+        pt1.y = cvRound(y0 + 1000 * (a));// +center.y;
+        pt2.x = cvRound(x0 - 1000 * (-b));// +center.x;
+        pt2.y = cvRound(y0 - 1000 * (a));// +center.y;
         line(img_, pt1, pt2, Sca, 1, LINE_AA);
         //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
     }
