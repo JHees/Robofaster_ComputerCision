@@ -49,11 +49,7 @@ Mat colorReduce(const Mat& input, int div)
 	return output;
 }
 
-void Callback_V(int tra, void* ptr)
-{
-	vector<Mat>* cha = (vector<Mat>*)ptr;
-	(*cha)[2] = Mat((*cha)[2].rows, (*cha)[2].cols, CV_8UC1, Scalar(tra));
-}
+
 
 void Callback_S_Thre_APPLE(int tra, void* ptr)
 {
@@ -85,28 +81,10 @@ void Callback_S_Thre_APPLE(int tra, void* ptr)
     threshold(S_Thre, S_Thre, 180, 255, 0);
     imshow("S_Threshold_APPLE", S_Thre);
     *ROI = S_Thre;
-    cout << *ROI<<endl;
+   // cout << *ROI<<endl;
 }
 
-void Callback_Thre_V(int tra, void* ptr)
-{
-	Mat Thre_V;
-	vector<Mat>*cha = (vector<Mat>*)ptr;
-	threshold((*cha)[2], Thre_V, tra, 255, 1);
-	//imshow("Thre_V before blur", Thre_V);
-	//blur(Thre_V, Thre_V, Size(3, 3));
-	vector<vector<Point>> con;
-	findContours(Thre_V, con, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
-	for (int i = 0; i < con.size(); ++i)
-		for (int j = 0; j < con[i].size(); ++j)
-		{
-			cout << con[i][j] << ' ';
-			Thre_V.ptr<Scalar>(i)[j] = Scalar(125);
-		}
-	cout << endl;
 
-	imshow("Thre_V", Thre_V);
-}
 
 void Callback_empty(int tra, void* ptr)
 {
@@ -177,7 +155,6 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
     vector<Vec2d> lines_fin;
 
     double f_sum_rho = 0, f_sum_theta = 0;
-
     vector<int> boundary;
     for (size_t i = 0; i < ret.size(); ++i)
     {
@@ -208,24 +185,24 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
             lines_fin[i][0] = lines_fin[i][0] + center.x*cos(lines_fin[i][1]) + center.y*sin(lines_fin[i][1]);
         }
     }
-    if(!img_.empty())
-    //for (size_t i = 0; i < lines_fin.size(); ++i)
-    //{
-    //    double rho = lines_fin[i][0], theta = lines_fin[i][1];
-    //    if (theta < 0)
-    //    {
-    //        theta += CV_PI;
-    //        rho = -rho;
-    //    }
-    //        
-    //    Point pt1, pt2;
-    //    double a = cos(theta), b = sin(theta);
-    //    double x0 = a * rho, y0 = b * rho;
-    //    pt1.x = cvRound(x0 + 1000 * (-b));// +center.x;
-    //    pt1.y = cvRound(y0 + 1000 * (a));// +center.y;
-    //    pt2.x = cvRound(x0 - 1000 * (-b));// +center.x;
-    //    pt2.y = cvRound(y0 - 1000 * (a));// +center.y;
-    //    line(img_, pt1, pt2, Sca, 1, LINE_AA);
+    //if (!img_.empty())
+        //for (size_t i = 0; i < lines_fin.size(); ++i)
+        //{
+        //    double rho = lines_fin[i][0], theta = lines_fin[i][1];
+        //    if (theta < 0)
+        //    {
+        //        theta += CV_PI;
+        //        rho = -rho;
+        //    }
+    //    draw_lines_polar(img_, lines_fin[i], Sca);
+    ////    Point pt1, pt2;
+    ////    double a = cos(theta), b = sin(theta);
+    ////    double x0 = a * rho, y0 = b * rho;
+    ////    pt1.x = cvRound(x0 + 1000 * (-b));// +center.x;
+    ////    pt1.y = cvRound(y0 + 1000 * (a));// +center.y;
+    ////    pt2.x = cvRound(x0 - 1000 * (-b));// +center.x;
+    ////    pt2.y = cvRound(y0 - 1000 * (a));// +center.y;
+    ////    line(img_, pt1, pt2, Sca, 1, LINE_AA);
     //    //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
     //}
 
@@ -273,11 +250,22 @@ void ret_output(Mat& img, const vector<Point>&p, int ret)
     string img_ret_filename;
     img_ret_filename.push_back(ret + '0'+1);
     img_ret_filename += ".png";
-    cout << img_ret_filename << endl;
+    //cout << img_ret_filename << endl;
     Mat img_ret = imread(img_ret_filename);
     Mat mask = imread(img_ret_filename, 0);
     Mat imgROI = img(Rect(1,1, mask.cols, mask.rows));
     img_ret.copyTo(imgROI , mask);
+}
 
-  
+void draw_lines_polar(Mat& img, const Vec2d& lines,const Scalar& Sca)
+{
+    double rho = lines[0], theta = lines[1];
+    Point pt1, pt2;
+    double a = cos(theta), b = sin(theta);
+    double x0 = a * rho, y0 = b * rho;
+    pt1.x = cvRound(x0 + 1000 * (-b));
+    pt1.y = cvRound(y0 + 1000 * (a));
+    pt2.x = cvRound(x0 - 1000 * (-b));
+    pt2.y = cvRound(y0 - 1000 * (a));
+    line(img, pt1, pt2, Sca, 1, LINE_AA);
 }

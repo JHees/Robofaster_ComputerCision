@@ -27,6 +27,7 @@ int main()
     const int BUFFER_SIZE = 3;
     deque<int> buffer(BUFFER_SIZE, 0);
     int ret_last = 0;
+
 	while (1)
 	{
 		Mat frame;
@@ -55,14 +56,15 @@ int main()
 		}
 		n++;
 		Mat image = colorReduce(frame,32);
+        blur(image, image, Size(3,3));
 		//imshow("origin", frame);
 		//imshow("reduce", image);
 
 		Mat Gray_img;
 		cvtColor(image,Gray_img, COLOR_RGB2GRAY);
-		blur(Gray_img, Gray_img, Size(3,3));
+		
 		//imshow("Gray", Gray_img);
-		vector<vector<Point>> contours;
+
 		Mat img_output;
 		namedWindow("canny");
 		createTrackbar("thre1","canny",  &Sli_thre1,500, Callback_empty);
@@ -78,33 +80,24 @@ int main()
 		HoughLines(img_output, lines, 1, CV_PI / 180, getTrackbarPos("Hough","HoughLines"), 0, 0);
 		for (size_t i = 0; i < lines.size(); ++i)
 		{
-			float rho = lines[i][0], theta = lines[i][1];
-			const int i_error_theta = 8;
-			if(!(theta / CV_PI * 180 <i_error_theta|| theta / CV_PI * 180 >180- i_error_theta ||(theta / CV_PI * 180 >90- i_error_theta && theta / CV_PI * 180<90+ i_error_theta)))
+            const double i_error_theta = 8 / 180 * CV_PI;
+			if(!(lines[i][1] <i_error_theta|| lines[i][1] >CV_PI- i_error_theta ||(lines[i][1] >CV_PI/2- i_error_theta && lines[i][1] <CV_PI/2+ i_error_theta)))
 			{
 				continue;
 			}
 			lines_perp.push_back(lines.at(i));
-			Point pt1, pt2;
-			double a = cos(theta), b = sin(theta);
-			double x0 = a * rho, y0 = b * rho;
-			pt1.x = cvRound(x0 + 1000 * (-b));
-			pt1.y = cvRound(y0 + 1000 * (a));
-			pt2.x = cvRound(x0 - 1000 * (-b));
-			pt2.y = cvRound(y0 - 1000 * (a));
-			line(img_output, pt1, pt2, Scalar(55, 100, 195), 1, LINE_AA);
+            draw_lines_polar(img_output, lines[i], Scalar(55, 100, 195));
 			//cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
 		} 
 		cout << "________________________________________________" << endl;
 
 		vector<va_ptr> lines_col,lines_row;
-		Mat lines_show(500,500,CV_8UC3,Scalar(0,0,0));
+		//Mat lines_show(500,500,CV_8UC3,Scalar(0,0,0));
 		for (size_t i = 0; i < lines_perp.size(); ++i)
 		{
             if (lines_perp[i][1] > 0.78&&lines_perp[i][1] < 2.36)//45度
             {
                 lines_col.push_back(va_ptr(abs(lines_perp[i][0]), lines_perp[i][1]));
-               
             }
 			else
 				lines_row.push_back(va_ptr(abs(lines_perp[i][0]), lines_perp[i][1]>1.7?-CV_PI+lines_perp[i][1]:lines_perp[i][1]));
@@ -116,9 +109,6 @@ int main()
 		sort(lines_col.begin(), lines_col.end());
 		sort(lines_row.begin(), lines_row.end());
 	    	
-
-
-		//vector<va_ptr> buf = find_dense_point(lines_col, img_canny);
         vector<Vec2d> lines_fin_col = find_dense_point(lines_col, frame, Scalar(0, 0, 255));
         vector<Vec2d> lines_fin_row = find_dense_point(lines_row, frame, Scalar(0, 0, 255));
 
@@ -154,45 +144,11 @@ int main()
         circle(img_canny, center, 5, Scalar(255, 255, 255), -1, 1);
        // cout << center.x << ' ' << center.y << "  center" << endl;
 
+        draw_lines_polar(frame, lines_fin_col[0], Scalar(0, 255, 0));
+        draw_lines_polar(frame, lines_fin_col[3], Scalar(0, 255, 0));
+        draw_lines_polar(frame, lines_fin_row[0], Scalar(0, 255, 0));
+        draw_lines_polar(frame, lines_fin_row[3], Scalar(0, 255, 0));
 
-            double rho = lines_fin_col[0][0], theta = lines_fin_col[0][1];
-            Point pt1, pt2;
-            double a = cos(theta), b = sin(theta);
-            double x0 = a * rho, y0 = b * rho;
-            pt1.x = cvRound(x0 + 1000 * (-b));
-            pt1.y = cvRound(y0 + 1000 * (a));
-            pt2.x = cvRound(x0 - 1000 * (-b));
-            pt2.y = cvRound(y0 - 1000 * (a));
-            line(frame, pt1, pt2, Scalar(0, 255, 0), 1, LINE_AA);
-
-             rho = lines_fin_col[3][0], theta = lines_fin_col[3][1];
-             pt1, pt2;
-             a = cos(theta), b = sin(theta);
-             x0 = a * rho, y0 = b * rho;
-            pt1.x = cvRound(x0 + 1000 * (-b));
-            pt1.y = cvRound(y0 + 1000 * (a));
-            pt2.x = cvRound(x0 - 1000 * (-b));
-            pt2.y = cvRound(y0 - 1000 * (a));
-            line(frame, pt1, pt2, Scalar(0, 255, 0), 1, LINE_AA);
-
-             rho = lines_fin_row[0][0], theta = lines_fin_row[0][1];
-             pt1, pt2;
-             a = cos(theta), b = sin(theta);
-             x0 = a * rho, y0 = b * rho;
-            pt1.x = cvRound(x0 + 1000 * (-b));
-            pt1.y = cvRound(y0 + 1000 * (a));
-            pt2.x = cvRound(x0 - 1000 * (-b));
-            pt2.y = cvRound(y0 - 1000 * (a));
-            line(frame, pt1, pt2, Scalar(0, 255, 0), 1, LINE_AA);
-             rho = lines_fin_row[3][0], theta = lines_fin_row[3][1];
-             pt1, pt2;
-             a = cos(theta), b = sin(theta);
-             x0 = a * rho, y0 = b * rho;
-            pt1.x = cvRound(x0 + 1000 * (-b));
-            pt1.y = cvRound(y0 + 1000 * (a));
-            pt2.x = cvRound(x0 - 1000 * (-b));
-            pt2.y = cvRound(y0 - 1000 * (a));
-            line(frame, pt1, pt2, Scalar(0, 255, 0), 1, LINE_AA);
 
         //imshow("boundary", img_canny);
 
@@ -277,7 +233,7 @@ int main()
             ret_output(frame, p_crossover, ret_last);
             cout << "ret: " << ret_last << endl;
 
-
+            namedWindow("Robofaster_ret_output");
         imshow("Robofaster_ret_output", frame);
 
 		waitKey(10);
