@@ -6,7 +6,7 @@
 #include <opencv2/opencv.hpp>
 #include<vector>
 #include"Functions.h"
-
+#define _DEBUG
 using namespace cv;
 using namespace std;
 
@@ -15,23 +15,38 @@ int main()
 	VideoCapture cap("Exa.mp4");
 	int frames=cap.get(CAP_PROP_FRAME_COUNT);
 	int n=0;
+	int error_frame = 0;
 
-	int S_Thre_Slider_APPLE =113;//171
-	int V_Slider = 0;
-	int Sli_Thre_V = 145;
+
+	int Sli_thre_S =113;//171
+
 
 	int Sli_thre1 = 250, Sli_thre2 = 500;
-    int Hough_Thre = 82; //71;80-109
 
-	int ADD_missline = 0;
+    int Hough_Thre = 82; //71;80-109
+    
+
+
+
+
     const int BUFFER_SIZE = 3;
     deque<int> buffer(BUFFER_SIZE, 0);
     int ret_last = 0;
 
+
+    namedWindow("Win_Parameter");
+    createTrackbar("thre1", "Win_Parameter", &Sli_thre1, 800, Callback_empty);
+    createTrackbar("thre2", "Win_Parameter", &Sli_thre2, 800, Callback_empty);
+    createTrackbar("S_Threshold", "Win_Parameter", &Sli_thre_S, 255, Callback_empty);
 	while (1)
 	{
+ vector<named_va> time_collect;
+time_collect.push_back(named_va("time_start",(double)getTickCount()));
+
 		Mat frame;
 		cap >> frame;
+        //resize(frame, frame, Size(0,0), 0.5, 0.5,INTER_AREA);
+time_collect.push_back(named_va("time_cap", (double)getTickCount()));
 		if (n==frames-13) 
 		{
 			cap.set(CAP_PROP_POS_FRAMES, 0);
@@ -51,46 +66,47 @@ int main()
 				
 			}
 			ADD_missline = 0;
-			Hough_Thre++;
-			continue;*/
+			Hough_Thre++;*/
+			continue;
 		}
 		n++;
+        
 		Mat image = colorReduce(frame,32);
-        blur(image, image, Size(3,3));
+        
 		//imshow("origin", frame);
 		//imshow("reduce", image);
-
-		Mat Gray_img;
-		cvtColor(image,Gray_img, COLOR_RGB2GRAY);
+time_collect.push_back(named_va("time_colorReduce",(double)getTickCount()));
+        blur(image, image, Size(3,3));
+time_collect.push_back(named_va("time_blur", (double)getTickCount()));
+        Mat img_canny;
+		cvtColor(image, img_canny, COLOR_RGB2GRAY);
 		
-		//imshow("Gray", Gray_img);
+		Canny(img_canny, img_canny, getTrackbarPos("thre1","Win_Parameter"), getTrackbarPos("thre2", "Win_Parameter"), 3);
+       
+        // imshow("canny", img_canny);
+time_collect.push_back(named_va("time_canny",(double)getTickCount()));
 
-		Mat img_output;
-		namedWindow("canny");
-		createTrackbar("thre1","canny",  &Sli_thre1,500, Callback_empty);
-		Callback_empty(Sli_thre1, NULL);
-		createTrackbar("thre2","canny",  &Sli_thre2, 500, Callback_empty);
-		Callback_empty(Sli_thre2, NULL);
-		Canny(Gray_img, img_output, getTrackbarPos("thre1","canny"), getTrackbarPos("thre2", "canny"), 3);
-       // imshow("canny", img_output);
-        Mat img_canny = img_output.clone();
+
 		vector<Vec2f> lines,lines_perp;
-		namedWindow("HoughLines");
-		createTrackbar("Hough", "HoughLines", &Hough_Thre, 500, Callback_empty);
-		HoughLines(img_output, lines, 1, CV_PI / 180, getTrackbarPos("Hough","HoughLines"), 0, 0);
+		//namedWindow("HoughLines");
+		createTrackbar("Hough", "Win_Parameter", &Hough_Thre, 500, Callback_empty);
+		HoughLines(img_canny, lines, 1, CV_PI / 180, getTrackbarPos("Hough","Win_Parameter"), 0, 0);
+time_collect.push_back(named_va("time_HoughLines",(double)getTickCount()));
+
+        
+        
+        cout << "________________________________________________" << endl;
 		for (size_t i = 0; i < lines.size(); ++i)
 		{
-            const double i_error_theta = 8 / 180 * CV_PI;
+            const double i_error_theta = 8 * CV_PI / 180;
 			if(!(lines[i][1] <i_error_theta|| lines[i][1] >CV_PI- i_error_theta ||(lines[i][1] >CV_PI/2- i_error_theta && lines[i][1] <CV_PI/2+ i_error_theta)))
 			{
 				continue;
 			}
 			lines_perp.push_back(lines.at(i));
-            draw_lines_polar(img_output, lines[i], Scalar(55, 100, 195));
+            //draw_lines_polar(img_output, lines[i], Scalar(55, 100, 195));
 			//cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
 		} 
-		cout << "________________________________________________" << endl;
-
 		vector<va_ptr> lines_col,lines_row;
 		//Mat lines_show(500,500,CV_8UC3,Scalar(0,0,0));
 		for (size_t i = 0; i < lines_perp.size(); ++i)
@@ -105,14 +121,24 @@ int main()
 
 		}
         
-        if (lines_col.size() <= 3|| lines_row.size() <= 3)continue;
+        if (lines_col.size() <= 3 || lines_row.size() <= 3)
+        {
+            continue;
+            error_frame++;
+        }
+
 		sort(lines_col.begin(), lines_col.end());
 		sort(lines_row.begin(), lines_row.end());
 	    	
         vector<Vec2d> lines_fin_col = find_dense_point(lines_col, frame, Scalar(0, 0, 255));
         vector<Vec2d> lines_fin_row = find_dense_point(lines_row, frame, Scalar(0, 0, 255));
+ time_collect.push_back(named_va("time_firstFindLines",(double)getTickCount()));
 
-        if (lines_fin_col.size() != 4 || lines_fin_row.size() != 4)continue;
+        if (lines_fin_col.size() != 4 || lines_fin_row.size() != 4)
+        {
+            continue;
+            error_frame++;
+        }
 
         Vec2d lines_fin_col_cen, lines_fin_row_cen;
         for (size_t i = 0; i < lines_fin_col.size(); ++i)
@@ -125,10 +151,11 @@ int main()
             lines_fin_row_cen[0] += (lines_fin_row[i][1] > 1.7 ? -lines_fin_row[i][0]: -lines_fin_row[i][0]) / lines_fin_row.size();
             lines_fin_row_cen[1] += (lines_fin_row[i][1] > 1.7 ? -CV_PI + lines_fin_row[i][1] : lines_fin_row[i][1]) / lines_fin_row.size();
         }
-        double& rho1 = lines_fin_col_cen[0], theta1 = lines_fin_col_cen[1];
-        double& rho2 = lines_fin_row_cen[0], theta2 = lines_fin_row_cen[1];
+        double& rho1 = lines_fin_col_cen[0], &theta1 = lines_fin_col_cen[1];
+        double& rho2 = lines_fin_row_cen[0], &theta2 = lines_fin_row_cen[1];
+time_collect.push_back(named_va("time_FindCenterPoint",(double)getTickCount()));
+        
         Point2d center((rho2*sin(theta1) - rho1 * sin(theta2)) / sin(theta2 - theta1), (rho2*cos(theta1) - rho1 * cos(theta2) / sin(theta2 - theta1)));
-
         for (size_t i = 0; i < lines_col.size(); ++i)
         {
             lines_col[i].value = lines_col[i].value - center.x*cos(lines_col[i].ptr) - center.y*sin(lines_col[i].ptr);
@@ -139,11 +166,10 @@ int main()
         }
         lines_fin_col=find_dense_point(lines_col, frame, Scalar(0, 255, 0),center);
         lines_fin_row=find_dense_point(lines_row, frame, Scalar(0, 255, 0),center);
-
+time_collect.push_back(named_va("time_secondFindLines",(double)getTickCount()));
 
         circle(img_canny, center, 5, Scalar(255, 255, 255), -1, 1);
        // cout << center.x << ' ' << center.y << "  center" << endl;
-
         draw_lines_polar(frame, lines_fin_col[0], Scalar(0, 255, 0));
         draw_lines_polar(frame, lines_fin_col[3], Scalar(0, 255, 0));
         draw_lines_polar(frame, lines_fin_row[0], Scalar(0, 255, 0));
@@ -181,21 +207,15 @@ int main()
 
         Mat img_ROI = image(Rect(p_crossover[0], p_crossover[15]));
 		Mat HSV_img;
-		cvtColor(img_ROI, HSV_img, COLOR_RGB2HSV);
-		//imshow("HSV", HSV_img);
-
-		std::vector<Mat> cha;
+        cvtColor(img_ROI, HSV_img, COLOR_RGB2HSV);
+		vector<Mat> cha;
 		split(HSV_img, cha);
-	//	imshow("H", cha[0]);
-	//	imshow("S", cha[1]);
-	//	imshow("V", cha[2]);
+		//namedWindow("S_Threshold_APPLE",WINDOW_AUTOSIZE);
+		
+		Callback_S_Thre_APPLE(getTrackbarPos("S_Threshold", "Win_Parameter"), &cha[0]);
+time_collect.push_back(named_va("time_ThresholdS", (double)getTickCount()));
 
-
-		namedWindow("S_Threshold_APPLE",WINDOW_AUTOSIZE);
-		createTrackbar("S_Threshold", "S_Threshold_APPLE", &S_Thre_Slider_APPLE, 255, Callback_S_Thre_APPLE, &cha[0]);
-		Callback_S_Thre_APPLE(S_Thre_Slider_APPLE, &cha[0]);
-
-        Mat img_ret = cha[0].clone();
+        Mat &img_ret = cha[0];
         int result = 0;
         bool flag_ = 0;
         for (int i = 0; i < img_ret.rows; ++i)
@@ -214,7 +234,6 @@ int main()
                 }
             }
         }
-
         buffer.pop_front();
         buffer.push_back(result);
         for (size_t i = 0; i < buffer.size()-1; ++i)
@@ -230,15 +249,22 @@ int main()
             ret_last = buffer[0];
             
         }
-            ret_output(frame, p_crossover, ret_last);
-            cout << "ret: " << ret_last << endl;
-
-            namedWindow("Robofaster_ret_output");
+        ret_output(frame, p_crossover, ret_last);
         imshow("Robofaster_ret_output", frame);
+		waitKey(1);
+ time_collect.push_back(named_va("time_retCorrectandOutput", (double)getTickCount()));
 
-		waitKey(10);
+        cout << "ret: " << ret_last << endl;
+        for (int i = 1; i < time_collect.size(); ++i)
+        {
+            cout << time_collect[i] - time_collect[i - 1];
+        }
+        
+ time_collect.push_back(named_va("time_end", (double)getTickCount()));
+ cout << time_collect[time_collect.size() - 1] - time_collect[0];
+
+
 	}
-
 	waitKey(0);
 }
 

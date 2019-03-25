@@ -3,6 +3,7 @@
 #include "pch.h"
 #include <iostream>
 #include <opencv2/opencv.hpp>
+
 #include<vector>
 #include<queue>
 #include<math.h>
@@ -27,60 +28,68 @@ public:
 	}
 };
 
-
-
-Mat colorReduce(const Mat& input, int div)
+class named_va
 {
-	Mat output = input.clone();
-	int row = output.rows;
-	int col = output.cols*output.channels();
-	uchar buf[256];
-	for (int i = 0; i < 256; ++i)
-	{
-		buf[i] = i / div * div + div / 2;
-	}
-	for (int i = 0; i < row; ++i)
-	{
-		for (int j = 0; j < col; ++j)
-		{
-			output.ptr<uchar>(i)[j] = buf[output.ptr<uchar>(i)[j]];
-		}
-	}
-	return output;
+public:
+    named_va() {};
+    named_va(string s, double v) :name(s), value(v) {};
+    string name;
+    double value;
+    named_va operator-(const named_va& va)
+    {
+        return named_va(name, value - va.value);
+    }
+    friend ostream& operator<<(ostream&, const named_va&);
+};
+
+ostream& operator<<(ostream& out, const named_va& nv)
+{
+    out << nv.name << ": " << nv.value*1000/getTickFrequency() << "ms " << endl;
+    return out;
+}
+
+
+Mat colorReduce(Mat input, int div)
+{
+	//int row = input.rows;
+	//int col = input.cols*input.channels();
+	//uchar buf[256];
+	//for (int i = 0; i < 256; ++i)
+	//{
+	//	buf[i] = i / div * div + div / 2;
+	//}
+	//for (int i = 0; i < row; ++i)
+	//{
+	//	for (int j = 0; j < col; ++j)
+	//	{
+ //           input.ptr<uchar>(i)[j] = buf[input.ptr<uchar>(i)[j]];
+	//	}
+	//}
+ //   return input;
+    Mat Table(1, 256, CV_8U);
+    uchar*p = Table.data;
+    for (int i = 0; i < 256; ++i)
+    {
+        p[i] = i / div * div + div / 2;
+    }
+    LUT(input, Table, input);
+    return input;
 }
 
 
 
 void Callback_S_Thre_APPLE(int tra, void* ptr)
 {
-	//Mat S_Thre;
-	//Mat* ROI = (Mat*)ptr;
-	//threshold((*ROI), S_Thre, tra, 255, 1);
-
-
-	//imshow("S_Threshold_APPLE", S_Thre);
-
-	//vector<Mat> cha_ROI;
-	//split(S_Thre, cha_ROI);
-	////imshow("ROI_H", cha_ROI[0]);
-	////imshow("ROI_S", cha_ROI[1]);
-	//imshow("ROI_V", cha_ROI[2]);
-	////	*ROI = S_Thre;
-    Mat S_Thre;
     Mat* ROI = (Mat*)ptr;
-    threshold((*ROI), S_Thre, tra, 255, 1);
-    //namedWindow("buf", WINDOW_AUTOSIZE);
-   // imshow("buf", S_Thre);
-    Size S_size(S_Thre.rows, S_Thre.cols);
+    threshold((*ROI), (*ROI), tra, 255, 1);
 
-    resize(S_Thre, S_Thre, Size(3, 3), 0, 0, INTER_LINEAR);
-    //	resize(S_Thre, S_Thre, Size(S_Thre.rows / 5, S_Thre.cols / 5), 0, 0, INTER_NEAREST);
+    //Size S_size((*ROI).rows, (*ROI).cols);
 
-    	//resize(S_Thre, S_Thre, S_size, 0, 0, INTER_NEAREST);
+    resize((*ROI), (*ROI), Size(3, 3), 0, 0, INTER_LINEAR);
 
-    threshold(S_Thre, S_Thre, 180, 255, 0);
-    imshow("S_Threshold_APPLE", S_Thre);
-    *ROI = S_Thre;
+    threshold((*ROI), (*ROI), 180, 255, 0);
+   // imshow("S_Threshold_APPLE", (*ROI));
+
    // cout << *ROI<<endl;
 }
 
@@ -107,12 +116,6 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
 		buf2.push_back(va_ptr(buf[i + 1].value - buf[i].value, i));
 	}
 	sort(buf2.begin(), buf2.end());
-	//for (size_t i = 0; i < buf2.size(); ++i)
-	//{
-	//	cout <<  '(' <<i<<','<< buf2[i].ptr<<','<< buf2[i].value <<") ";
-	//	circle(lines_show, Point(double(i+1) / buf.size() * 500, buf2[i].value * 5), 2, Scalar(51, 255, 233), -1, 1);
-	//}
-	//cout << endl;
 
 	vector<va_ptr> buf3;
 	for (size_t i = 0; i < buf2.size() - 1; ++i)
@@ -122,14 +125,9 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
 	}
 
     sort(buf3.begin(), buf3.end());
-	//for (size_t i = 0; i < buf3.size(); ++i)
-	//{
-	//	cout << '(' << i << ',' << buf3[i].ptr << ',' << buf3[i].value << ") ";
-	//	circle(lines_show, Point(double(i+2) / buf.size() * 500, buf3[i].value * 5), 2, Scalar(255, 191, 51), -1, 1);
-	//}
 	
 	int ptr =buf3.back().ptr+1;
-	//cout << endl<<ptr<<endl;
+
 	if(ptr<buf2.size())
 	for (size_t i = ptr; i < buf2.size(); ++i)
 	{
@@ -139,7 +137,7 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
 		}
 	}
 	ptr=buf2[ptr].ptr+1;
-	//cout << ptr << endl;
+
 	for (size_t i = 0; i < buf.size(); ++i)
 	{
 		if (i >= ptr)
@@ -195,14 +193,7 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
         //        rho = -rho;
         //    }
     //    draw_lines_polar(img_, lines_fin[i], Sca);
-    ////    Point pt1, pt2;
-    ////    double a = cos(theta), b = sin(theta);
-    ////    double x0 = a * rho, y0 = b * rho;
-    ////    pt1.x = cvRound(x0 + 1000 * (-b));// +center.x;
-    ////    pt1.y = cvRound(y0 + 1000 * (a));// +center.y;
-    ////    pt2.x = cvRound(x0 - 1000 * (-b));// +center.x;
-    ////    pt2.y = cvRound(y0 - 1000 * (a));// +center.y;
-    ////    line(img_, pt1, pt2, Sca, 1, LINE_AA);
+ 
     //    //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
     //}
 
