@@ -9,6 +9,15 @@
 #ifndef PCH_H
 #define PCH_H
 
+#include"SerialPortTest/SerialPort.h"
+#include"SerialPortTest/stdafx.h"
+//#define _DEBUG
+//#ifdef _DEBUG
+    #define _DEBUGimg
+   // #define _DEBUGtime
+    //#define _DEBUGmes
+#define _DEBUGret
+//#endif
 // TODO: 添加要在此处预编译的标头
 
 #endif //PCH_H

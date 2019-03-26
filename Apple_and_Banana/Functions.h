@@ -41,6 +41,18 @@ public:
     }
     friend ostream& operator<<(ostream&, const named_va&);
 };
+void draw_lines_polar(Mat& img, const Vec2d& lines, const Scalar& Sca)
+{
+    double rho = lines[0], theta = lines[1];
+    Point pt1, pt2;
+    double a = cos(theta), b = sin(theta);
+    double x0 = a * rho, y0 = b * rho;
+    pt1.x = cvRound(x0 + 1000 * (-b));
+    pt1.y = cvRound(y0 + 1000 * (a));
+    pt2.x = cvRound(x0 - 1000 * (-b));
+    pt2.y = cvRound(y0 - 1000 * (a));
+    line(img, pt1, pt2, Sca, 1, LINE_AA);
+}
 
 ostream& operator<<(ostream& out, const named_va& nv)
 {
@@ -49,7 +61,7 @@ ostream& operator<<(ostream& out, const named_va& nv)
 }
 
 
-Mat colorReduce(Mat input, int div)
+void colorReduce(const Mat& input,Mat& output, int div)
 {
 	//int row = input.rows;
 	//int col = input.cols*input.channels();
@@ -72,8 +84,8 @@ Mat colorReduce(Mat input, int div)
     {
         p[i] = i / div * div + div / 2;
     }
-    LUT(input, Table, input);
-    return input;
+    LUT(input, Table, output);
+
 }
 
 
@@ -82,15 +94,16 @@ void Callback_S_Thre_APPLE(int tra, void* ptr)
 {
     Mat* ROI = (Mat*)ptr;
     threshold((*ROI), (*ROI), tra, 255, 1);
-
     //Size S_size((*ROI).rows, (*ROI).cols);
-
     resize((*ROI), (*ROI), Size(3, 3), 0, 0, INTER_LINEAR);
 
     threshold((*ROI), (*ROI), 180, 255, 0);
-   // imshow("S_Threshold_APPLE", (*ROI));
-
-   // cout << *ROI<<endl;
+#ifdef _DEBUGimg
+    imshow("S_Threshold_APPLE", (*ROI));
+#endif
+#ifdef _DEBUGmes
+    cout << *ROI<<endl;
+#endif
 }
 
 
@@ -101,7 +114,7 @@ void Callback_empty(int tra, void* ptr)
 }
 
 
-vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca, const Point& center=Point(0,0))
+vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca, Mat& lines_show,const Point& center=Point(0,0))
 {
 	vector<va_ptr> ret;
 	vector<va_ptr> buf;
@@ -137,19 +150,34 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
 		}
 	}
 	ptr=buf2[ptr].ptr+1;
-
+    
 	for (size_t i = 0; i < buf.size(); ++i)
 	{
 		if (i >= ptr)
-		{
-			//circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value*5), 2, Scalar(255, 0, 0), -1, 1);
+		{   
+            if (!lines_show.empty())
+			circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value*5), 2, Scalar(255, 0, 0), -1, 1);
 			ret.push_back(buf[i]);
 		}
-		//else
-			//circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value*5), 2, Scalar(0, 0, 255), -1, 1);
+        else
+        {
+            if (!lines_show.empty())
+                circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value * 5), 2, Scalar(255, 244, 0), -1, 1);
+
+        }
 		//cout << '(' << i << ',' << buf[i].ptr << ',' << buf[i].value << ") ";
 	}
 	//cout << endl;
+
+
+    if (center != Point(0, 0))
+    {
+        for (size_t i = 0; i < lines.size(); ++i)
+        {
+            //lines_fin[i][0] = lines_fin[i][0] + sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_fin[i][1] - atan(center.y / center.x));
+            lines[i].value = lines[i].value + center.x*cos(lines[i].ptr) + center.y*sin(lines[i].ptr);
+        }
+    }
     vector<Vec2d> lines_fin;
 
     double f_sum_rho = 0, f_sum_theta = 0;
@@ -175,45 +203,36 @@ vector<Vec2d> find_dense_point(const vector<va_ptr>& lines,Mat& img_,Scalar Sca,
         f_sum_rho = 0;
         f_sum_theta = 0;
     }
-    if (center != Point(0, 0))
+
+    if (!img_.empty())
     {
         for (size_t i = 0; i < lines_fin.size(); ++i)
         {
-            //lines_fin[i][0] = lines_fin[i][0] + sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_fin[i][1] - atan(center.y / center.x));
-            lines_fin[i][0] = lines_fin[i][0] + center.x*cos(lines_fin[i][1]) + center.y*sin(lines_fin[i][1]);
+            draw_lines_polar(img_, lines_fin[i], Sca);
         }
+        //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
     }
-    //if (!img_.empty())
-        //for (size_t i = 0; i < lines_fin.size(); ++i)
-        //{
-        //    double rho = lines_fin[i][0], theta = lines_fin[i][1];
-        //    if (theta < 0)
-        //    {
-        //        theta += CV_PI;
-        //        rho = -rho;
-        //    }
-    //    draw_lines_polar(img_, lines_fin[i], Sca);
- 
-    //    //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
-    //}
+    if (!lines_show.empty()) 
+    {
+        for (size_t i = 0; i < lines.size(); ++i)
+        {
+            circle(lines_show, Point((double)(lines[i].value ) * 500 / img_.cols, (double)(lines[i].ptr) <= 0.78 ? 100 : 250),0.5 , Scalar(255, 255, 255), -1, 1);
+        }
 
-    //for (size_t i = 0; i < lines.size(); ++i)
-    //{
-    //    circle(lines_show, Point((double)(lines[i].value) / img_canny.cols * 500, (double)(lines[i].ptr) <= 0.78 ? 100 : 250), 1, Scalar(255, 255, 255), -1, 1);
-    //}
+        for (size_t i = 0; i < ret.size(); ++i)
+        {
+            circle(lines_show, Point((double)(lines[ret[i].ptr].value) * 500 / img_.cols, (double)(lines[ret[i].ptr].ptr) <= 0.78 ? 70 : 220), 2, Scalar(51, 255, 91), -1, 1);
+            //cout << buf[i].value << "! ";
+            //circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
+        }
 
-    //for (size_t i = 0; i < ret.size(); ++i)
-    //{
-    //    circle(lines_show, Point((double)(lines[ret[i].ptr].value) / img_canny.cols * 500, (double)(lines[ret[i].ptr].ptr) <= 0.78 ? 100 : 250), 2, Scalar(51, 255, 91), -1, 1);
-    //    //cout << buf[i].value << "! ";
-    //    //circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
-    //}
+        for (size_t i = 0; i < lines_fin.size(); ++i)
+        {
+            circle(lines_show, Point((double)(lines_fin[i][0]) * 500 / img_.cols , (double)(lines_fin[i][1]) <= 0.78 ? 90 : 240), 3, Scalar(0, 0, 255), -1, 1);
+        }
 
-    //for (size_t i = 0; i < lines_fin.size(); ++i)
-    //{
-    //    circle(lines_show, Point((double)(lines_fin[i][0]) / img_canny.cols * 500, (double)(lines_fin[i][1]) <= 0.78 ? 100 : 250), 3, Scalar(0, 0, 255), -1, 1);
-    //}
-
+    }
+    
 	return lines_fin;
 }
 
@@ -248,15 +267,3 @@ void ret_output(Mat& img, const vector<Point>&p, int ret)
     img_ret.copyTo(imgROI , mask);
 }
 
-void draw_lines_polar(Mat& img, const Vec2d& lines,const Scalar& Sca)
-{
-    double rho = lines[0], theta = lines[1];
-    Point pt1, pt2;
-    double a = cos(theta), b = sin(theta);
-    double x0 = a * rho, y0 = b * rho;
-    pt1.x = cvRound(x0 + 1000 * (-b));
-    pt1.y = cvRound(y0 + 1000 * (a));
-    pt2.x = cvRound(x0 - 1000 * (-b));
-    pt2.y = cvRound(y0 - 1000 * (a));
-    line(img, pt1, pt2, Sca, 1, LINE_AA);
-}

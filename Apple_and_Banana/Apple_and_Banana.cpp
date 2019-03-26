@@ -6,13 +6,14 @@
 #include <opencv2/opencv.hpp>
 #include<vector>
 #include"Functions.h"
-#define _DEBUG
+
+
 using namespace cv;
 using namespace std;
 
 int main()
 {
-	VideoCapture cap("Exa.mp4");
+	VideoCapture cap("ex4.mp4");
 	int frames=cap.get(CAP_PROP_FRAME_COUNT);
 	int n=0;
 	int error_frame = 0;
@@ -26,13 +27,28 @@ int main()
     int Hough_Thre = 82; //71;80-109
     
 
+    CSerialPort mySerialPort;
+    if (!mySerialPort.InitPort(6))
+    {
+        std::cout << "initPort fail !" << std::endl;
+    }
+    else
+    {
+        std::cout << "initPort success !" << std::endl;
+    }
 
-
-
+    if (!mySerialPort.OpenListenThread())
+    {
+        std::cout << "OpenListenThread fail !" << std::endl;
+    }
+    else
+    {
+        std::cout << "OpenListenThread success !" << std::endl;
+    }
     const int BUFFER_SIZE = 3;
     deque<int> buffer(BUFFER_SIZE, 0);
     int ret_last = 0;
-
+    vector<named_va> time_collect;
 
     namedWindow("Win_Parameter");
     createTrackbar("thre1", "Win_Parameter", &Sli_thre1, 800, Callback_empty);
@@ -40,13 +56,17 @@ int main()
     createTrackbar("S_Threshold", "Win_Parameter", &Sli_thre_S, 255, Callback_empty);
 	while (1)
 	{
- vector<named_va> time_collect;
+#ifdef _DEBUGtime
+time_collect.clear();
 time_collect.push_back(named_va("time_start",(double)getTickCount()));
+#endif
 
 		Mat frame;
 		cap >> frame;
         //resize(frame, frame, Size(0,0), 0.5, 0.5,INTER_AREA);
+#ifdef _DEBUGtime
 time_collect.push_back(named_va("time_cap", (double)getTickCount()));
+#endif
 		if (n==frames-13) 
 		{
 			cap.set(CAP_PROP_POS_FRAMES, 0);
@@ -71,28 +91,35 @@ time_collect.push_back(named_va("time_cap", (double)getTickCount()));
 		}
 		n++;
         
-		Mat image = colorReduce(frame,32);
+        Mat image;
+        colorReduce(frame, image, 32);
         
-		//imshow("origin", frame);
+		imshow("origin", frame);
 		//imshow("reduce", image);
+#ifdef _DEBUGtime
 time_collect.push_back(named_va("time_colorReduce",(double)getTickCount()));
+#endif
         blur(image, image, Size(3,3));
+#ifdef _DEBUGtime
 time_collect.push_back(named_va("time_blur", (double)getTickCount()));
+#endif
         Mat img_canny;
 		cvtColor(image, img_canny, COLOR_RGB2GRAY);
 		
 		Canny(img_canny, img_canny, getTrackbarPos("thre1","Win_Parameter"), getTrackbarPos("thre2", "Win_Parameter"), 3);
        
-        // imshow("canny", img_canny);
+         imshow("canny", img_canny);
+#ifdef _DEBUGtime
 time_collect.push_back(named_va("time_canny",(double)getTickCount()));
-
+#endif
 
 		vector<Vec2f> lines,lines_perp;
 		//namedWindow("HoughLines");
 		createTrackbar("Hough", "Win_Parameter", &Hough_Thre, 500, Callback_empty);
 		HoughLines(img_canny, lines, 1, CV_PI / 180, getTrackbarPos("Hough","Win_Parameter"), 0, 0);
+#ifdef _DEBUGtime
 time_collect.push_back(named_va("time_HoughLines",(double)getTickCount()));
-
+#endif
         
         
         cout << "________________________________________________" << endl;
@@ -104,11 +131,16 @@ time_collect.push_back(named_va("time_HoughLines",(double)getTickCount()));
 				continue;
 			}
 			lines_perp.push_back(lines.at(i));
-            //draw_lines_polar(img_output, lines[i], Scalar(55, 100, 195));
-			//cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
+#ifdef _DEBUGimg
+            draw_lines_polar(img_canny, lines_perp[i], Scalar(55, 100, 195));
+#endif
+
+#ifdef _DEBUGmes
+			cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
+#endif
 		} 
 		vector<va_ptr> lines_col,lines_row;
-		//Mat lines_show(500,500,CV_8UC3,Scalar(0,0,0));
+		Mat lines_show(500, 500, CV_8UC3, Scalar(0, 0, 0)), lines_show2(500, 500, CV_8UC3, Scalar(0, 0, 0));
 		for (size_t i = 0; i < lines_perp.size(); ++i)
 		{
             if (lines_perp[i][1] > 0.78&&lines_perp[i][1] < 2.36)//45度
@@ -123,65 +155,82 @@ time_collect.push_back(named_va("time_HoughLines",(double)getTickCount()));
         
         if (lines_col.size() <= 3 || lines_row.size() <= 3)
         {
-            continue;
+            imshow("boundary", img_canny);
+            waitKey(30);
+            cout << "error lines size." << endl;
             error_frame++;
+            continue;
+            
         }
 
 		sort(lines_col.begin(), lines_col.end());
 		sort(lines_row.begin(), lines_row.end());
-	    	
-        vector<Vec2d> lines_fin_col = find_dense_point(lines_col, frame, Scalar(0, 0, 255));
-        vector<Vec2d> lines_fin_row = find_dense_point(lines_row, frame, Scalar(0, 0, 255));
- time_collect.push_back(named_va("time_firstFindLines",(double)getTickCount()));
 
+        Mat empty;
+        vector<Vec2d> lines_fin_col = find_dense_point(lines_col, frame, Scalar(0, 0, 255),lines_show);
+        vector<Vec2d> lines_fin_row = find_dense_point(lines_row, frame, Scalar(0, 0, 255),lines_show);
+#ifdef _DEBUGtime
+ time_collect.push_back(named_va("time_firstFindLines",(double)getTickCount()));
+#endif
         if (lines_fin_col.size() != 4 || lines_fin_row.size() != 4)
         {
-            continue;
+            imshow("boundary", img_canny);
+            waitKey(30);
+            cout << "error fin line size." << endl;
             error_frame++;
+            continue;
+            
         }
 
-        Vec2d lines_fin_col_cen, lines_fin_row_cen;
-        for (size_t i = 0; i < lines_fin_col.size(); ++i)
-        {
-            lines_fin_col_cen[0] += lines_fin_col[i][0] / lines_fin_col.size();
-            lines_fin_col_cen[1] += lines_fin_col[i][1] / lines_fin_col.size();
-        }
-        for (size_t i = 0; i < lines_fin_row.size(); ++i)
-        {
-            lines_fin_row_cen[0] += (lines_fin_row[i][1] > 1.7 ? -lines_fin_row[i][0]: -lines_fin_row[i][0]) / lines_fin_row.size();
-            lines_fin_row_cen[1] += (lines_fin_row[i][1] > 1.7 ? -CV_PI + lines_fin_row[i][1] : lines_fin_row[i][1]) / lines_fin_row.size();
-        }
-        double& rho1 = lines_fin_col_cen[0], &theta1 = lines_fin_col_cen[1];
-        double& rho2 = lines_fin_row_cen[0], &theta2 = lines_fin_row_cen[1];
-time_collect.push_back(named_va("time_FindCenterPoint",(double)getTickCount()));
-        
-        Point2d center((rho2*sin(theta1) - rho1 * sin(theta2)) / sin(theta2 - theta1), (rho2*cos(theta1) - rho1 * cos(theta2) / sin(theta2 - theta1)));
-        for (size_t i = 0; i < lines_col.size(); ++i)
-        {
-            lines_col[i].value = lines_col[i].value - center.x*cos(lines_col[i].ptr) - center.y*sin(lines_col[i].ptr);
-        }
-        for (size_t i = 0; i < lines_row.size(); ++i)
-        {
-            lines_row[i].value = lines_row[i].value - center.x*cos(lines_row[i].ptr) - center.y*sin(lines_row[i].ptr);
-        }
-        lines_fin_col=find_dense_point(lines_col, frame, Scalar(0, 255, 0),center);
-        lines_fin_row=find_dense_point(lines_row, frame, Scalar(0, 255, 0),center);
+//        Vec2d lines_fin_col_cen, lines_fin_row_cen;
+//        for (size_t i = 0; i < lines_fin_col.size(); ++i)
+//        {
+//            lines_fin_col_cen[0] += lines_fin_col[i][0] / lines_fin_col.size();
+//            lines_fin_col_cen[1] += lines_fin_col[i][1] / lines_fin_col.size();
+//        }
+//        for (size_t i = 0; i < lines_fin_row.size(); ++i)
+//        {
+//            lines_fin_row_cen[0] += (lines_fin_row[i][1] > 1.7 ? -lines_fin_row[i][0]: -lines_fin_row[i][0]) / lines_fin_row.size();
+//            lines_fin_row_cen[1] += (lines_fin_row[i][1] > 1.7 ? -CV_PI + lines_fin_row[i][1] : lines_fin_row[i][1]) / lines_fin_row.size();
+//        }
+//        double& rho1 = lines_fin_col_cen[0], &theta1 = lines_fin_col_cen[1];
+//        double& rho2 = lines_fin_row_cen[0], &theta2 = lines_fin_row_cen[1];
+//#ifdef _DEBUGtime
+//time_collect.push_back(named_va("time_FindCenterPoint",(double)getTickCount()));
+//#endif
+//        Point2d center((rho2*sin(theta1) - rho1 * sin(theta2)) / sin(theta2 - theta1), (rho2*cos(theta1) - rho1 * cos(theta2) / sin(theta2 - theta1)));
+//        for (size_t i = 0; i < lines_col.size(); ++i)
+//        {
+//            lines_col[i].value = lines_col[i].value - center.x*cos(lines_col[i].ptr) - center.y*sin(lines_col[i].ptr);
+//        }
+//        for (size_t i = 0; i < lines_row.size(); ++i)
+//        {
+//            lines_row[i].value = lines_row[i].value - center.x*cos(lines_row[i].ptr) - center.y*sin(lines_row[i].ptr);
+//        }
+//        
+//        lines_fin_col=find_dense_point(lines_col, frame, Scalar(0, 255, 0), lines_show2,center);
+//        lines_fin_row=find_dense_point(lines_row, frame, Scalar(0, 255, 0), empty,center);
+
+
+#ifdef _DEBUGtime
 time_collect.push_back(named_va("time_secondFindLines",(double)getTickCount()));
-
-        circle(img_canny, center, 5, Scalar(255, 255, 255), -1, 1);
+#endif
+        //circle(img_canny, center, 5, Scalar(255, 255, 255), -1, 1);
        // cout << center.x << ' ' << center.y << "  center" << endl;
-        draw_lines_polar(frame, lines_fin_col[0], Scalar(0, 255, 0));
-        draw_lines_polar(frame, lines_fin_col[3], Scalar(0, 255, 0));
-        draw_lines_polar(frame, lines_fin_row[0], Scalar(0, 255, 0));
-        draw_lines_polar(frame, lines_fin_row[3], Scalar(0, 255, 0));
+        //draw_lines_polar(frame, lines_fin_col[0], Scalar(0, 255, 0));
+        //draw_lines_polar(frame, lines_fin_col[1], Scalar(0, 255, 0));
+        //draw_lines_polar(frame, lines_fin_col[2], Scalar(0, 255, 0));
+        //draw_lines_polar(frame, lines_fin_col[3], Scalar(0, 255, 0));
+        //draw_lines_polar(frame, lines_fin_row[0], Scalar(0, 255, 0));
+        //draw_lines_polar(frame, lines_fin_row[1], Scalar(0, 255, 0));
+        //draw_lines_polar(frame, lines_fin_row[2], Scalar(0, 255, 0));
+        //draw_lines_polar(frame, lines_fin_row[3], Scalar(0, 255, 0));
 
-
-        //imshow("boundary", img_canny);
-
-		//imshow("lines_prep_show", lines_show);
-	
+#ifdef _DEBUGimg
+        imshow("boundary", img_canny);
+		imshow("lines_prep_show", lines_show);
 		//imshow("HoughLines", img_output);
-
+#endif
         double rho_col[4], theta_col[4], rho_row[4], theta_row[4];
         for (size_t i = 0; i < lines_fin_col.size(); ++i)
         {
@@ -213,11 +262,13 @@ time_collect.push_back(named_va("time_secondFindLines",(double)getTickCount()));
 		//namedWindow("S_Threshold_APPLE",WINDOW_AUTOSIZE);
 		
 		Callback_S_Thre_APPLE(getTrackbarPos("S_Threshold", "Win_Parameter"), &cha[0]);
+#ifdef _DEBUGtime
 time_collect.push_back(named_va("time_ThresholdS", (double)getTickCount()));
-
+#endif
         Mat &img_ret = cha[0];
-        int result = 0;
+       int result = 0;
         bool flag_ = 0;
+        int ret = 0;
         for (int i = 0; i < img_ret.rows; ++i)
         {
             for (int j = 0; j < img_ret.cols; ++j)
@@ -244,14 +295,26 @@ time_collect.push_back(named_va("time_ThresholdS", (double)getTickCount()));
                 break;
             }
         }
-        if (flag_&&ret_last!=buffer[0])
+        if (flag_)
+            ret = buffer[0];
+#ifdef _DEBUGret
+        ret_output(frame, p_crossover, ret);
+        imshow("Robofaster_ret_output", frame);
+#endif
+        if (flag_&&ret_last != ret)
         {
             ret_last = buffer[0];
-            
+            if (!mySerialPort.BuffSend(ret))
+            {
+                std::cout << "SerialPort Data Send fail : " <<ret<< std::endl;
+            }
+            else
+            {
+                std::cout << "SerialPort Data Send success : " <<ret<< std::endl;
+            }
         }
-        ret_output(frame, p_crossover, ret_last);
-        imshow("Robofaster_ret_output", frame);
-		waitKey(1);
+
+#ifdef _DEBUGtime
  time_collect.push_back(named_va("time_retCorrectandOutput", (double)getTickCount()));
 
         cout << "ret: " << ret_last << endl;
@@ -262,8 +325,8 @@ time_collect.push_back(named_va("time_ThresholdS", (double)getTickCount()));
         
  time_collect.push_back(named_va("time_end", (double)getTickCount()));
  cout << time_collect[time_collect.size() - 1] - time_collect[0];
-
-
+#endif
+    waitKey(30);
 	}
 	waitKey(0);
 }
