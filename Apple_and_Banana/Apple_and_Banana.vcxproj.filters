@@ -13,39 +13,21 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="SerialPost">
-      <UniqueIdentifier>{91961132-f681-4666-b9f0-df67db3f17ee}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="pch.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="Functions.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="SerialPortTest\SerialPort.h">
-      <Filter>SerialPost</Filter>
-    </ClInclude>
-    <ClInclude Include="SerialPortTest\stdafx.h">
-      <Filter>SerialPost</Filter>
-    </ClInclude>
-    <ClInclude Include="SerialPortTest\targetver.h">
-      <Filter>SerialPost</Filter>
+    <ClInclude Include="pch.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="pch.cpp">
-      <Filter>源文件</Filter>
-    </ClCompile>
     <ClCompile Include="Apple_and_Banana.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="SerialPortTest\SerialPort.cpp">
-      <Filter>SerialPost</Filter>
-    </ClCompile>
-    <ClCompile Include="SerialPortTest\stdafx.cpp">
-      <Filter>SerialPost</Filter>
+    <ClCompile Include="pch.cpp">
+      <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
 </Project>

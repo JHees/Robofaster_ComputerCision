@@ -9,12 +9,11 @@
 #ifndef PCH_H
 #define PCH_H
 
-#include"SerialPortTest/SerialPort.h"
-#include"SerialPortTest/stdafx.h"
+
 //#define _DEBUG
 //#ifdef _DEBUG
     #define _DEBUGimg
-   // #define _DEBUGtime
+   //#define _DEBUGtime
     //#define _DEBUGmes
 #define _DEBUGret
 //#endif

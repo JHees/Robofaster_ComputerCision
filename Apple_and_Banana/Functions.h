@@ -237,7 +237,7 @@ vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca, Mat& 
 }
 
 
-void ret_output(Mat& img, const vector<Point>&p, int ret)
+void ret_output(Mat& img, const vector<Point2d>&p, int ret)
 {
     if (ret == 0)
     {
@@ -267,3 +267,8 @@ void ret_output(Mat& img, const vector<Point>&p, int ret)
     img_ret.copyTo(imgROI , mask);
 }
 
+
+/*TODO:
+*1.·ÂÉä
+*2.¶ş²æÊ÷ ¾ÛÀà
+*/
