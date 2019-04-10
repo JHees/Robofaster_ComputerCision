@@ -3,6 +3,8 @@
 #include "pch.h"
 #include <iostream>
 #include <opencv2/opencv.hpp>
+#include"cluster/valpos.h"
+#include"cluster/Tree.h"
 
 #include<vector>
 #include<queue>
@@ -114,43 +116,46 @@ void Callback_empty(int tra, void* ptr)
 }
 
 
-vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca, Mat& lines_show,const Point& center=Point(0,0))
+vector<Vec2d> find_dense_point(vector<Vec2d>& lines,Mat& img_,Scalar Sca, Mat& lines_show,const Point& center=Point(0,0))
 {
-	vector<va_ptr> ret;
-	vector<va_ptr> buf;
-	for (size_t i = 0; i < lines.size()-1; ++i)
-	{
-		buf.push_back(va_ptr(lines[i + 1].value - lines[i].value, i));
-	}
-	sort(buf.begin(), buf.end());
-	vector<va_ptr> buf2;
-	for (size_t i = 0; i < buf.size() - 1; ++i)
-	{
-		buf2.push_back(va_ptr(buf[i + 1].value - buf[i].value, i));
-	}
-	sort(buf2.begin(), buf2.end());
+	vector<Vec2d> ret;
+	vector<Vec2d> buf;
+	/*
+    //for (size_t i = 0; i < lines.size()-1; ++i)
+	//{
+	//	buf.push_back(va_ptr(lines[i + 1].value - lines[i].value, i));
+	//}
+	//sort(buf.begin(), buf.end());
+	//vector<va_ptr> buf2;
+	//for (size_t i = 0; i < buf.size() - 1; ++i)
+	//{
+	//	buf2.push_back(va_ptr(buf[i + 1].value - buf[i].value, i));
+	//}
+	//sort(buf2.begin(), buf2.end());
 
-	vector<va_ptr> buf3;
-	for (size_t i = 0; i < buf2.size() - 1; ++i)
-	{
-		
-		buf3.push_back(va_ptr(buf2[i + 1].value - buf2[i].value, i));
-	}
+	//vector<va_ptr> buf3;
+	//for (size_t i = 0; i < buf2.size() - 1; ++i)
+	//{
+	//	
+	//	buf3.push_back(va_ptr(buf2[i + 1].value - buf2[i].value, i));
+	//}
 
-    sort(buf3.begin(), buf3.end());
-	
-	int ptr =buf3.back().ptr+1;
+ //   sort(buf3.begin(), buf3.end());
+	//
+	//int ptr =buf3.back().ptr+1;
 
-	if(ptr<buf2.size())
-	for (size_t i = ptr; i < buf2.size(); ++i)
-	{
-		if (buf2[ptr].ptr > buf2[i].ptr)
-		{
-			ptr = i;
-		}
-	}
-	ptr=buf2[ptr].ptr+1;
+	//if(ptr<buf2.size())
+	//for (size_t i = ptr; i < buf2.size(); ++i)
+	//{
+	//	if (buf2[ptr].ptr > buf2[i].ptr)
+	//	{
+	//		ptr = i;
+	//	}
+	//}
+	//ptr=buf2[ptr].ptr+1;
+    */
     
+
 	for (size_t i = 0; i < buf.size(); ++i)
 	{
 		if (i >= ptr)
@@ -236,7 +241,7 @@ vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca, Mat& 
 	return lines_fin;
 }
 
-
+vector<Vec2d> find_dense_point(vector<va_ptr>& lines, Mat& img_, Scalar Sca, Mat& lines_show, const Point& center = Point(0, 0))
 void ret_output(Mat& img, const vector<Point2d>&p, int ret)
 {
     if (ret == 0)

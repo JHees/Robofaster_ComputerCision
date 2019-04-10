@@ -13,7 +13,7 @@ using namespace std;
 
 int main()
 {
-	VideoCapture cap("Ex2.mp4");
+	VideoCapture cap("Ex3-1.mp4");
 	int frames=cap.get(CAP_PROP_FRAME_COUNT);
 	int n=0;
 	int error_frame = 0;
@@ -109,16 +109,16 @@ time_collect.push_back(named_va("time_HoughLines",(double)getTickCount()));
 			cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
 #endif
 		} 
-		vector<va_ptr> lines_col,lines_row;
+		vector<Vec2d> lines_col,lines_row;
 		Mat lines_show(500, 500, CV_8UC3, Scalar(0, 0, 0)), lines_show2(500, 500, CV_8UC3, Scalar(0, 0, 0));
 		for (size_t i = 0; i < lines_perp.size(); ++i)
 		{
             if (lines_perp[i][1] > 0.78&&lines_perp[i][1] < 2.36)//45度
             {
-                lines_col.push_back(va_ptr(abs(lines_perp[i][0]), lines_perp[i][1]));
+                lines_col.push_back(Vec2d(abs(lines_perp[i][0]), lines_perp[i][1]));
             }
 			else
-				lines_row.push_back(va_ptr(abs(lines_perp[i][0]), lines_perp[i][1]>1.7?-CV_PI+lines_perp[i][1]:lines_perp[i][1]));
+				lines_row.push_back(Vec2d(abs(lines_perp[i][0]), lines_perp[i][1]>1.7?-CV_PI+lines_perp[i][1]:lines_perp[i][1]));
 			//circle(lines_show, Point((double)(lines_perp[i][0]) / img_output.rows * 500, (lines_perp[i][1] <=0.78 ? 100 : 250)), 0.5, Scalar(255, 255, 255), -1, 1);
 
 		}
