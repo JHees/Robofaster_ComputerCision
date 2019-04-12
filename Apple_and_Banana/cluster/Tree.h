@@ -1,5 +1,13 @@
 #pragma once
+#include<iostream>
+#include <opencv2/opencv.hpp>
+using namespace std;
+using namespace cv;
 
+inline Vec2d center(const Vec2d& el1, const Vec2d& el2)
+{
+    return Vec2d((el1.val[0] + el2.val[0]) / 2, (el1.val[1] + el2.val[1]) / 2);
+}
 
 template<typename Ty>
 class TreeNode
@@ -28,12 +36,16 @@ public:
         el = new type;
         *el = e;
     }
+    template<typename U>
+    friend ostream& operator<<(ostream&, const TreeNode<U>&);
     ~TreeNode()
     {   
-        if(el)
-            delete el;
+        /*if(el)
+            delete el;*/
     }
 };
+
+
 
 template<typename Ty>
 class Tree
@@ -41,6 +53,8 @@ class Tree
 public:
     using type = Ty;
     TreeNode<type> *root;
+    template<typename U>
+    friend ostream& operator<<(ostream&, const Tree<U>&);
     Tree()
     {
         root = NULL;
@@ -49,36 +63,35 @@ public:
     {
         root = &r;
     }
-    void joint(type el1, type el2)
+    
+
+    void joint( Tree<type> node1,  Tree<type> node2)
     {
-        TreeNode<type>* node1 = new TreeNode<type>(true);
-        TreeNode<type>* node2 = new TreeNode<type>(true);
-        node1->set_el(el1);
-        node2->set_el(el2);
         root = new TreeNode<type>(true);
-        root->set_el((el1 + el2) / 2);
-        push_after(&root, node1, node2);
+        root->set_el(center(*(node1.root->el),*(node2.root->el)));
+        push_after(*root, node1, node2);
     }
-    void push_after(TreeNode<type>& r, const TreeNode<type>& left,const TreeNode<type>& right )//= (const TreeNode<type> *)NULL)
+
+    void push_after(TreeNode<type>& r, Tree<type>& left,Tree<type>& right )//= (const TreeNode<type> *)NULL)
     {
         if (!r.left && !r.right)
         {
-            r.left = *left;
-            r.right = *right;
+            r.left = left.root;
+            r.right = right.root;
             
         }
         else
             throw("cannot push_after this tree node because it is full.");
     }
-    void push_after(TreeNode<type>& r, const TreeNode<type>& left)
+    void push_after(Tree<type>& r, Tree<type>& left)
     {
         if (!r.left )
         {
-            r.left = *left;
+            r.left = left.root;
         }
         else if (!r.right)
         {
-            r.right = *left;
+            r.right = left.root;
         }
         else
             throw("cannot push_after this tree node because it is full.");
@@ -102,7 +115,9 @@ public:
     {
         TreeNode<type>*left = ptr->left, *right = ptr->right;
         if (ptr->deleteFlag)
-            delete ptr;
+        {
+            //delete ptr;
+        }
         else
         {
             ptr->left = NULL;
@@ -118,4 +133,24 @@ public:
         erase(root);
     };//±éÀúÊý£¬deleteFlag
 };
+template<typename T>
+ostream& operator<<(ostream& out, const TreeNode<T>& tr)
+{
+    out << *(tr.el);
+    return out;
+}
 
+template<typename T>
+ostream& operator<<(ostream& out, const Tree<T>& tr)
+{
+    out << *(tr.root) << std::endl;
+    if (tr.root->left) 
+        out << *(tr.root->left);
+    if (tr.root->left&&tr.root->right)
+        out << "/|\\";
+    if (tr.root->right) 
+        out << *(tr.root->right);
+    if (tr.root->left || tr.root->right)
+        out << std::endl;
+    return out;
+}

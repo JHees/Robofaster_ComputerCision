@@ -115,11 +115,25 @@ void Callback_empty(int tra, void* ptr)
 
 }
 
-
-vector<Vec2d> find_dense_point(vector<Vec2d>& lines,Mat& img_,Scalar Sca, Mat& lines_show,const Point& center=Point(0,0))
+inline double distance(Vec2d* const p1, Vec2d* const p2)
 {
-	vector<Vec2d> ret;
-	vector<Vec2d> buf;
+    return sqrt(pow(p1->val[0] - p2->val[0], 2) + pow(p1->val[1] - p2->val[1], 2));
+}
+
+
+template<typename type>
+double distance(TreeNode<type>* const p1, TreeNode<type>* const p2)
+{
+    return distance(p1->el, p2->el);
+}
+inline Vec2d distanceNearby(unsigned int pos)
+{
+
+}
+vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca, Mat& lines_show,const Point& center=Point(0,0))
+{
+	vector<va_ptr> ret;
+	vector<va_ptr> buf;
 	/*
     //for (size_t i = 0; i < lines.size()-1; ++i)
 	//{
@@ -154,94 +168,133 @@ vector<Vec2d> find_dense_point(vector<Vec2d>& lines,Mat& img_,Scalar Sca, Mat& l
 	//}
 	//ptr=buf2[ptr].ptr+1;
     */
-    
-
-	for (size_t i = 0; i < buf.size(); ++i)
-	{
-		if (i >= ptr)
-		{   
-            if (!lines_show.empty())
-			circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value*5), 2, Scalar(255, 0, 0), -1, 1);
-			ret.push_back(buf[i]);
-		}
-        else
-        {
-            if (!lines_show.empty())
-                circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value * 5), 2, Scalar(255, 244, 0), -1, 1);
-
-        }
-		//cout << '(' << i << ',' << buf[i].ptr << ',' << buf[i].value << ") ";
-	}
-	//cout << endl;
-
-
-    if (center != Point(0, 0))
+    vector<TreeNode<Vec2d>> lines_node;
+    for (size_t i = 0; i < lines.size(); ++i)
     {
-        for (size_t i = 0; i < lines.size(); ++i)
-        {
-            //lines_fin[i][0] = lines_fin[i][0] + sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_fin[i][1] - atan(center.y / center.x));
-            lines[i].value = lines[i].value + center.x*cos(lines[i].ptr) + center.y*sin(lines[i].ptr);
-        }
+        lines_node.push_back(TreeNode<Vec2d>(Vec2d(lines[i].value,lines[i].ptr)));
     }
+    vector<double> dist(lines.size() - 1);
+    for (size_t i = 0; i < lines.size() - 1; ++i)
+    {
+        dist[i] = distance(&lines_node[i], &lines_node[i + 1]);
+    }
+    vector<Tree<Vec2d>> pre_tree;
+    for (size_t i = 0; i < dist.size(); ++i)
+    {
+        if (i == 0 ? 1 : dist[i - 1] > dist[i] && (i >= (dist.size() - 2) ? 1 : dist[i] < dist[i + 1]))
+        {
+            Tree<Vec2d> buf;
+            buf.joint(Tree<Vec2d>(lines_node[i]), Tree<Vec2d>(lines_node[i + 1]));
+           pre_tree.push_back(buf);
+        }
+        else pre_tree.push_back(lines_node[i]);
+    }
+    while (pre_tree.size()!=1)
+    {
+        vector<double> dist(pre_tree.size() - 1);
+        for (size_t i = 0; i < pre_tree.size() - 1; ++i)
+        {
+            dist[i] = distance(pre_tree[i].root, pre_tree[i + 1].root);
+        }
+        vector<Tree<Vec2d>> tree;
+        for (size_t i = 0; i < dist.size(); ++i)
+        {
+            if (i == 0 ? 1 : dist[i - 1] > dist[i] && (i >= (dist.size() - 2) ? 1 : dist[i] < dist[i + 1]))
+            {
+                Tree<Vec2d> buf;
+                buf.joint(pre_tree[i], pre_tree[i + 1]);
+                tree.push_back(buf);
+            }
+            else tree.push_back(pre_tree[i]);
+        }
+        pre_tree = tree;
+    }
+    cout << pre_tree[0];
+	//for (size_t i = 0; i < buf.size(); ++i)
+	//{
+	//	if (i >= ptr)
+	//	{   
+ //           if (!lines_show.empty())
+	//		circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value*5), 2, Scalar(255, 0, 0), -1, 1);
+	//		ret.push_back(buf[i]);
+	//	}
+ //       else
+ //       {
+ //           if (!lines_show.empty())
+ //               circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value * 5), 2, Scalar(255, 244, 0), -1, 1);
+
+ //       }
+	//	//cout << '(' << i << ',' << buf[i].ptr << ',' << buf[i].value << ") ";
+	//}
+	////cout << endl;
+
+
+    //if (center != Point(0, 0))
+    //{
+    //    for (size_t i = 0; i < lines.size(); ++i)
+    //    {
+    //        //lines_fin[i][0] = lines_fin[i][0] + sqrt(pow(center.x, 2) + pow(center.y, 2))*cos(lines_fin[i][1] - atan(center.y / center.x));
+    //        lines[i].value = lines[i].value + center.x*cos(lines[i].ptr) + center.y*sin(lines[i].ptr);
+    //    }
+    //}
     vector<Vec2d> lines_fin;
 
-    double f_sum_rho = 0, f_sum_theta = 0;
-    vector<int> boundary;
-    for (size_t i = 0; i < ret.size(); ++i)
-    {
-        boundary.push_back(ret[i].ptr);
-    }
-    sort(boundary.begin(), boundary.end());
-    for (size_t j = 0; j <= boundary.size(); ++j)
-    {
+    //double f_sum_rho = 0, f_sum_theta = 0;
+    //vector<int> boundary;
+    //for (size_t i = 0; i < ret.size(); ++i)
+    //{
+    //    boundary.push_back(ret[i].ptr);
+    //}
+    //sort(boundary.begin(), boundary.end());
+    //for (size_t j = 0; j <= boundary.size(); ++j)
+    //{
 
-        for (size_t i = (j == 0 ? 0 : boundary[j - 1] + 1); i <= (j == boundary.size() ? lines.size() - 1 : boundary[j]); ++i)
-        {
-            f_sum_rho += lines[i].value;
-            f_sum_theta += lines[i].ptr;
-        }
-        //(j == boundary.size() ? lines_col.size() - 1 : boundary[j])-(j == 0 ? 0 : boundary[j - 1] + 1)
-        f_sum_rho /= (j == boundary.size() ? lines.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1) + 1;
-        f_sum_theta /= (j == boundary.size() ? lines.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1) + 1;
-       // cout << f_sum_rho << ' ' << f_sum_theta << endl;
-        lines_fin.push_back(Vec2d(f_sum_rho, f_sum_theta));
-        f_sum_rho = 0;
-        f_sum_theta = 0;
-    }
+    //    for (size_t i = (j == 0 ? 0 : boundary[j - 1] + 1); i <= (j == boundary.size() ? lines.size() - 1 : boundary[j]); ++i)
+    //    {
+    //        f_sum_rho += lines[i].value;
+    //        f_sum_theta += lines[i].ptr;
+    //    }
+    //    //(j == boundary.size() ? lines_col.size() - 1 : boundary[j])-(j == 0 ? 0 : boundary[j - 1] + 1)
+    //    f_sum_rho /= (j == boundary.size() ? lines.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1) + 1;
+    //    f_sum_theta /= (j == boundary.size() ? lines.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1) + 1;
+    //   // cout << f_sum_rho << ' ' << f_sum_theta << endl;
+    //    lines_fin.push_back(Vec2d(f_sum_rho, f_sum_theta));
+    //    f_sum_rho = 0;
+    //    f_sum_theta = 0;
+    //}
 
-    if (!img_.empty())
-    {
-        for (size_t i = 0; i < lines_fin.size(); ++i)
-        {
-            draw_lines_polar(img_, lines_fin[i], Sca);
-        }
-        //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
-    }
-    if (!lines_show.empty()) 
-    {
-        for (size_t i = 0; i < lines.size(); ++i)
-        {
-            circle(lines_show, Point((double)(lines[i].value ) * 500 / img_.cols, (double)(lines[i].ptr) <= 0.78 ? 100 : 250),0.5 , Scalar(255, 255, 255), -1, 1);
-        }
+    //if (!img_.empty())
+    //{
+    //    for (size_t i = 0; i < lines_fin.size(); ++i)
+    //    {
+    //        draw_lines_polar(img_, lines_fin[i], Sca);
+    //    }
+    //    //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
+    //}
+    //if (!lines_show.empty()) 
+    //{
+    //    for (size_t i = 0; i < lines.size(); ++i)
+    //    {
+    //        circle(lines_show, Point((double)(lines[i].value ) * 500 / img_.cols, (double)(lines[i].ptr) <= 0.78 ? 100 : 250),0.5 , Scalar(255, 255, 255), -1, 1);
+    //    }
 
-        for (size_t i = 0; i < ret.size(); ++i)
-        {
-            circle(lines_show, Point((double)(lines[ret[i].ptr].value) * 500 / img_.cols, (double)(lines[ret[i].ptr].ptr) <= 0.78 ? 70 : 220), 2, Scalar(51, 255, 91), -1, 1);
-            //cout << buf[i].value << "! ";
-            //circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
-        }
+    //    for (size_t i = 0; i < ret.size(); ++i)
+    //    {
+    //        circle(lines_show, Point((double)(lines[ret[i].ptr].value) * 500 / img_.cols, (double)(lines[ret[i].ptr].ptr) <= 0.78 ? 70 : 220), 2, Scalar(51, 255, 91), -1, 1);
+    //        //cout << buf[i].value << "! ";
+    //        //circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
+    //    }
 
-        for (size_t i = 0; i < lines_fin.size(); ++i)
-        {
-            circle(lines_show, Point((double)(lines_fin[i][0]) * 500 / img_.cols , (double)(lines_fin[i][1]) <= 0.78 ? 90 : 240), 3, Scalar(0, 0, 255), -1, 1);
-        }
+    //    for (size_t i = 0; i < lines_fin.size(); ++i)
+    //    {
+    //        circle(lines_show, Point((double)(lines_fin[i][0]) * 500 / img_.cols , (double)(lines_fin[i][1]) <= 0.78 ? 90 : 240), 3, Scalar(0, 0, 255), -1, 1);
+    //    }
 
-    }
+    //}
     
 	return lines_fin;
 }
 
-vector<Vec2d> find_dense_point(vector<va_ptr>& lines, Mat& img_, Scalar Sca, Mat& lines_show, const Point& center = Point(0, 0))
 void ret_output(Mat& img, const vector<Point2d>&p, int ret)
 {
     if (ret == 0)
