@@ -13,10 +13,10 @@ using namespace std;
 
 int main()
 {
-	VideoCapture cap("Ex3-1.mp4");
+	VideoCapture cap("Ex3-2.mp4");
 	int frames=cap.get(CAP_PROP_FRAME_COUNT);
 	int n=0;
-	int error_frame = 0;
+
 
 
 	int Sli_thre_S =110;//171
@@ -50,6 +50,7 @@ time_collect.push_back(named_va("time_start",(double)getTickCount()));
 #ifdef _DEBUGtime
 time_collect.push_back(named_va("time_cap", (double)getTickCount()));
 #endif
+#ifdef _CAMERA
 		if (n==frames-13) 
 		{
 			cap.set(CAP_PROP_POS_FRAMES, 0);
@@ -57,7 +58,7 @@ time_collect.push_back(named_va("time_cap", (double)getTickCount()));
 			continue;
 		}
 		n++;
-        
+#endif
         Mat image;
         colorReduce(frame, image, 32);
         
@@ -76,7 +77,9 @@ time_collect.push_back(named_va("time_blur", (double)getTickCount()));
         Mat img_canny;
 		cvtColor(image, img_canny, COLOR_RGB2GRAY);
 		Canny(img_canny, img_canny, getTrackbarPos("thre1","Win_Parameter"), getTrackbarPos("thre2", "Win_Parameter"), 3);
+#ifdef _DEBUGimg
         imshow("canny", img_canny);
+#endif
 
 #ifdef _DEBUGtime
 time_collect.push_back(named_va("time_canny",(double)getTickCount()));
@@ -109,23 +112,22 @@ time_collect.push_back(named_va("time_HoughLines",(double)getTickCount()));
 			cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
 #endif
 		} 
-		vector<Vec2d> lines_col,lines_row;
-		Mat lines_show(500, 500, CV_8UC3, Scalar(0, 0, 0)), lines_show2(500, 500, CV_8UC3, Scalar(0, 0, 0));
+		vector<va_ptr> lines_col,lines_row;
 		for (size_t i = 0; i < lines_perp.size(); ++i)
 		{
             if (lines_perp[i][1] > 0.78&&lines_perp[i][1] < 2.36)//45度
             {
-                lines_col.push_back(Vec2d(abs(lines_perp[i][0]), lines_perp[i][1]));
+                lines_col.push_back(va_ptr(abs(lines_perp[i][0]), lines_perp[i][1]));
             }
 			else
-				lines_row.push_back(Vec2d(abs(lines_perp[i][0]), lines_perp[i][1]>1.7?-CV_PI+lines_perp[i][1]:lines_perp[i][1]));
+				lines_row.push_back(va_ptr(abs(lines_perp[i][0]), lines_perp[i][1]>1.7?-CV_PI+lines_perp[i][1]:lines_perp[i][1]));
 			//circle(lines_show, Point((double)(lines_perp[i][0]) / img_output.rows * 500, (lines_perp[i][1] <=0.78 ? 100 : 250)), 0.5, Scalar(255, 255, 255), -1, 1);
 
 		}
         
         if (lines_col.size() <= 3 || lines_row.size() <= 3)
         {
-            imshow("boundary", img_canny);
+            //imshow("boundary", img_canny);
             waitKey(30);
             cout << "error lines size." << endl;
             error_frame++;
@@ -137,14 +139,14 @@ time_collect.push_back(named_va("time_HoughLines",(double)getTickCount()));
 		sort(lines_row.begin(), lines_row.end());
 
         Mat empty;
-        vector<Vec2d> lines_fin_col = find_dense_point(lines_col, frame, Scalar(0, 0, 255),lines_show);
-        vector<Vec2d> lines_fin_row = find_dense_point(lines_row, frame, Scalar(0, 0, 255),lines_show);
+        vector<Vec2d> lines_fin_col = find_dense_point(lines_col, frame, Scalar(0, 0, 255));
+        vector<Vec2d> lines_fin_row = find_dense_point(lines_row, frame, Scalar(0, 0, 255));
 #ifdef _DEBUGtime
  time_collect.push_back(named_va("time_firstFindLines",(double)getTickCount()));
 #endif
         if (lines_fin_col.size() != 4 || lines_fin_row.size() != 4)
         {
-            imshow("boundary", img_canny);
+            //imshow("boundary", img_canny);
             waitKey(30);
             cout << "error fin line size." << endl;
             error_frame++;
@@ -178,8 +180,8 @@ time_collect.push_back(named_va("time_FindCenterPoint",(double)getTickCount()));
             lines_row[i].value = lines_row[i].value - center.x*cos(lines_row[i].ptr) - center.y*sin(lines_row[i].ptr);
         }
         
-        lines_fin_col=find_dense_point(lines_col, frame, Scalar(0, 255, 0), lines_show2,center);
-        lines_fin_row=find_dense_point(lines_row, frame, Scalar(0, 255, 0), empty,center);
+        lines_fin_col=find_dense_point(lines_col, frame, Scalar(0, 255, 0), center);
+        lines_fin_row=find_dense_point(lines_row, frame, Scalar(0, 255, 0), center);
 
 
 #ifdef _DEBUGtime
@@ -248,8 +250,10 @@ time_collect.push_back(named_va("time_secondFindLines",(double)getTickCount()));
         Mat img_ROI_bf = image(Rect(p_cornerTar[0], p_cornerTar[3]));
         Mat img_ROI(img_ROI_bf.rows,img_ROI_bf.cols,CV_8UC3);
         warpPerspective(img_ROI_bf, img_ROI, matrix_Warp,Size(img_ROI_bf.cols,img_ROI_bf.rows));
+#ifdef _DEBUGimg
         imshow("beforeWarp", img_ROI_bf);
         imshow("afterWarp", img_ROI);
+#endif
 		Mat HSV_img;
         cvtColor(img_ROI, HSV_img, COLOR_RGB2HSV);
 		vector<Mat> cha;
@@ -296,7 +300,9 @@ time_collect.push_back(named_va("time_ThresholdS", (double)getTickCount()));
         ret_output(frame, p_crossover, ret);
         imshow("Robofaster_ret_output", frame);
         cout << "ret: " << ret << endl;
+#ifdef _CAMERA
         cout << n << endl;
+#endif
 #endif
  
 
@@ -313,7 +319,7 @@ time_collect.push_back(named_va("time_ThresholdS", (double)getTickCount()));
  cout << time_collect[time_collect.size() - 1] - time_collect[0];
 #endif
 
-    waitKey(30);
+    waitKey(10);
 	}
 	waitKey(0);
 }

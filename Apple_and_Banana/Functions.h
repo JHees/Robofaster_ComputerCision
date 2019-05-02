@@ -116,60 +116,52 @@ void Callback_empty(int tra, void* ptr)
 }
 
 
-vector<Vec2d> find_dense_point(vector<Vec2d>& lines,Mat& img_,Scalar Sca, Mat& lines_show,const Point& center=Point(0,0))
+vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca,const Point& center=Point(0,0))
 {
-	vector<Vec2d> ret;
-	vector<Vec2d> buf;
-	/*
-    //for (size_t i = 0; i < lines.size()-1; ++i)
-	//{
-	//	buf.push_back(va_ptr(lines[i + 1].value - lines[i].value, i));
-	//}
-	//sort(buf.begin(), buf.end());
-	//vector<va_ptr> buf2;
-	//for (size_t i = 0; i < buf.size() - 1; ++i)
-	//{
-	//	buf2.push_back(va_ptr(buf[i + 1].value - buf[i].value, i));
-	//}
-	//sort(buf2.begin(), buf2.end());
+	vector<va_ptr> ret;
+	vector<va_ptr> buf;
+	
+    for (size_t i = 0; i < lines.size()-1; ++i)
+	{
+		buf.push_back(va_ptr(lines[i + 1].value - lines[i].value, i));
+	}
+	sort(buf.begin(), buf.end());
+	vector<va_ptr> buf2;
+	for (size_t i = 0; i < buf.size() - 1; ++i)
+	{
+		buf2.push_back(va_ptr(buf[i + 1].value - buf[i].value, i));
+	}
+	sort(buf2.begin(), buf2.end());
 
-	//vector<va_ptr> buf3;
-	//for (size_t i = 0; i < buf2.size() - 1; ++i)
-	//{
-	//	
-	//	buf3.push_back(va_ptr(buf2[i + 1].value - buf2[i].value, i));
-	//}
+	vector<va_ptr> buf3;
+	for (size_t i = 0; i < buf2.size() - 1; ++i)
+	{
+		
+		buf3.push_back(va_ptr(buf2[i + 1].value - buf2[i].value, i));
+	}
 
- //   sort(buf3.begin(), buf3.end());
-	//
-	//int ptr =buf3.back().ptr+1;
+    sort(buf3.begin(), buf3.end());
+	
+	int ptr =buf3.back().ptr+1;
 
-	//if(ptr<buf2.size())
-	//for (size_t i = ptr; i < buf2.size(); ++i)
-	//{
-	//	if (buf2[ptr].ptr > buf2[i].ptr)
-	//	{
-	//		ptr = i;
-	//	}
-	//}
-	//ptr=buf2[ptr].ptr+1;
-    */
+	if(ptr<buf2.size())
+	for (size_t i = ptr; i < buf2.size(); ++i)
+	{
+		if (buf2[ptr].ptr > buf2[i].ptr)
+		{
+			ptr = i;
+		}
+	}
+	ptr=buf2[ptr].ptr+1;
+    
     
 
 	for (size_t i = 0; i < buf.size(); ++i)
 	{
 		if (i >= ptr)
-		{   
-            if (!lines_show.empty())
-			circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value*5), 2, Scalar(255, 0, 0), -1, 1);
+        {
 			ret.push_back(buf[i]);
 		}
-        else
-        {
-            if (!lines_show.empty())
-                circle(lines_show, Point(double(i) / buf.size() * 500, buf[i].value * 5), 2, Scalar(255, 244, 0), -1, 1);
-
-        }
 		//cout << '(' << i << ',' << buf[i].ptr << ',' << buf[i].value << ") ";
 	}
 	//cout << endl;
@@ -217,31 +209,32 @@ vector<Vec2d> find_dense_point(vector<Vec2d>& lines,Mat& img_,Scalar Sca, Mat& l
         }
         //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
     }
-    if (!lines_show.empty()) 
-    {
-        for (size_t i = 0; i < lines.size(); ++i)
-        {
-            circle(lines_show, Point((double)(lines[i].value ) * 500 / img_.cols, (double)(lines[i].ptr) <= 0.78 ? 100 : 250),0.5 , Scalar(255, 255, 255), -1, 1);
-        }
 
-        for (size_t i = 0; i < ret.size(); ++i)
-        {
-            circle(lines_show, Point((double)(lines[ret[i].ptr].value) * 500 / img_.cols, (double)(lines[ret[i].ptr].ptr) <= 0.78 ? 70 : 220), 2, Scalar(51, 255, 91), -1, 1);
-            //cout << buf[i].value << "! ";
-            //circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
-        }
+    //if (!lines_show.empty()) 
+    //{
+    //    for (size_t i = 0; i < lines.size(); ++i)
+    //    {
+    //        circle(lines_show, Point((double)(lines[i].value ) * 500 / img_.cols, (double)(lines[i].ptr) <= 0.78 ? 100 : 250),0.5 , Scalar(255, 255, 255), -1, 1);
+    //    }
 
-        for (size_t i = 0; i < lines_fin.size(); ++i)
-        {
-            circle(lines_show, Point((double)(lines_fin[i][0]) * 500 / img_.cols , (double)(lines_fin[i][1]) <= 0.78 ? 90 : 240), 3, Scalar(0, 0, 255), -1, 1);
-        }
+    //    for (size_t i = 0; i < ret.size(); ++i)
+    //    {
+    //        circle(lines_show, Point((double)(lines[ret[i].ptr].value) * 500 / img_.cols, (double)(lines[ret[i].ptr].ptr) <= 0.78 ? 70 : 220), 2, Scalar(51, 255, 91), -1, 1);
+    //        //cout << buf[i].value << "! ";
+    //        //circle(lines_show, Point(double(i) / img_output.rows * 500, buf_fin[i] * 10), 0.5, Scalar(0, 255, 0), -1, 1);
+    //    }
 
-    }
-    
+    //    for (size_t i = 0; i < lines_fin.size(); ++i)
+    //    {
+    //        circle(lines_show, Point((double)(lines_fin[i][0]) * 500 / img_.cols , (double)(lines_fin[i][1]) <= 0.78 ? 90 : 240), 3, Scalar(0, 0, 255), -1, 1);
+    //    }
+
+    //}
+   
 	return lines_fin;
 }
 
-vector<Vec2d> find_dense_point(vector<va_ptr>& lines, Mat& img_, Scalar Sca, Mat& lines_show, const Point& center = Point(0, 0))
+
 void ret_output(Mat& img, const vector<Point2d>&p, int ret)
 {
     if (ret == 0)

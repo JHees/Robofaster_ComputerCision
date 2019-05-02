@@ -9,13 +9,14 @@
 #ifndef PCH_H
 #define PCH_H
 
-
+#define _DEBUGret
+#define _CAMERA
 //#define _DEBUG
 //#ifdef _DEBUG
-    #define _DEBUGimg
+    //#define _DEBUGimg
    //#define _DEBUGtime
     //#define _DEBUGmes
-#define _DEBUGret
+
 //#endif
 // TODO: 添加要在此处预编译的标头
 
