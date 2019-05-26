@@ -11,7 +11,7 @@
 #include<math.h>
 
 
-using namespace cv;
+
 using namespace std;
 
 
@@ -43,27 +43,27 @@ public:
     }
     friend ostream& operator<<(ostream&, const named_va&);
 };
-void draw_lines_polar(Mat& img, const Vec2d& lines, const Scalar& Sca)
+void draw_lines_polar(cv::Mat& img, const cv::Vec2d& lines, const cv::Scalar& Sca)
 {
     double rho = lines[0], theta = lines[1];
-    Point pt1, pt2;
+    cv::Point pt1, pt2;
     double a = cos(theta), b = sin(theta);
     double x0 = a * rho, y0 = b * rho;
     pt1.x = cvRound(x0 + 1000 * (-b));
     pt1.y = cvRound(y0 + 1000 * (a));
     pt2.x = cvRound(x0 - 1000 * (-b));
     pt2.y = cvRound(y0 - 1000 * (a));
-    line(img, pt1, pt2, Sca, 1, LINE_AA);
+    line(img, pt1, pt2, Sca, 1, cv::LINE_AA);
 }
 
 ostream& operator<<(ostream& out, const named_va& nv)
 {
-    out << nv.name << ": " << nv.value*1000/getTickFrequency() << "ms " << endl;
+    out << nv.name << ": " << nv.value*1000/ cv::getTickFrequency() << "ms " << endl;
     return out;
 }
 
 
-void colorReduce(const Mat& input,Mat& output, int div)
+void colorReduce(const cv::Mat& input, cv::Mat& output, int div)
 {
 	//int row = input.rows;
 	//int col = input.cols*input.channels();
@@ -80,13 +80,13 @@ void colorReduce(const Mat& input,Mat& output, int div)
 	//	}
 	//}
  //   return input;
-    Mat Table(1, 256, CV_8U);
+    cv::Mat Table(1, 256, CV_8U);
     uchar*p = Table.data;
     for (int i = 0; i < 256; ++i)
     {
         p[i] = i / div * div + div / 2;
     }
-    LUT(input, Table, output);
+    cv::LUT(input, Table, output);
 
 }
 
@@ -94,12 +94,12 @@ void colorReduce(const Mat& input,Mat& output, int div)
 
 void Callback_S_Thre_APPLE(int tra, void* ptr)
 {
-    Mat* ROI = (Mat*)ptr;
-    threshold((*ROI), (*ROI), tra, 255, 1);
+    cv::Mat* ROI = (cv::Mat*)ptr;
+    cv::threshold((*ROI), (*ROI), tra, 255, 1);
     //Size S_size((*ROI).rows, (*ROI).cols);
-    resize((*ROI), (*ROI), Size(3, 3), 0, 0, INTER_LINEAR);
+    cv::resize((*ROI), (*ROI), cv::Size(3, 3), 0, 0, cv::INTER_LINEAR);
 
-    threshold((*ROI), (*ROI), 180, 255, 0);
+    cv::threshold((*ROI), (*ROI), 180, 255, 0);
 #ifdef _DEBUGimg
     imshow("S_Threshold_APPLE", (*ROI));
 #endif
@@ -116,7 +116,7 @@ void Callback_empty(int tra, void* ptr)
 }
 
 
-vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca,const Point& center=Point(0,0))
+vector<cv::Vec2d> find_dense_point(vector<va_ptr>& lines, cv::Mat& img_, cv::Scalar Sca,const cv::Point& center= cv::Point(0,0))
 {
 	vector<va_ptr> ret;
 	vector<va_ptr> buf;
@@ -167,7 +167,7 @@ vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca,const 
 	//cout << endl;
 
 
-    if (center != Point(0, 0))
+    if (center != cv::Point(0, 0))
     {
         for (size_t i = 0; i < lines.size(); ++i)
         {
@@ -175,7 +175,7 @@ vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca,const 
             lines[i].value = lines[i].value + center.x*cos(lines[i].ptr) + center.y*sin(lines[i].ptr);
         }
     }
-    vector<Vec2d> lines_fin;
+    vector<cv::Vec2d> lines_fin;
 
     double f_sum_rho = 0, f_sum_theta = 0;
     vector<int> boundary;
@@ -196,19 +196,19 @@ vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca,const 
         f_sum_rho /= (j == boundary.size() ? lines.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1) + 1;
         f_sum_theta /= (j == boundary.size() ? lines.size() - 1 : boundary[j]) - (j == 0 ? 0 : boundary[j - 1] + 1) + 1;
        // cout << f_sum_rho << ' ' << f_sum_theta << endl;
-        lines_fin.push_back(Vec2d(f_sum_rho, f_sum_theta));
+        lines_fin.push_back(cv::Vec2d(f_sum_rho, f_sum_theta));
         f_sum_rho = 0;
         f_sum_theta = 0;
     }
 
-    if (!img_.empty())
-    {
-        for (size_t i = 0; i < lines_fin.size(); ++i)
-        {
-            draw_lines_polar(img_, lines_fin[i], Sca);
-        }
-        //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
-    }
+    //if (!img_.empty())
+    //{
+    //    for (size_t i = 0; i < lines_fin.size(); ++i)
+    //    {
+    //        draw_lines_polar(img_, lines_fin[i], Sca);
+    //    }
+    //    //cout << rho << ' ' <<int(theta / CV_PI * 180) << endl;
+    //}
 
     //if (!lines_show.empty()) 
     //{
@@ -235,15 +235,15 @@ vector<Vec2d> find_dense_point(vector<va_ptr>& lines,Mat& img_,Scalar Sca,const 
 }
 
 
-void ret_output(Mat& img, const vector<Point2d>&p, int ret)
+void ret_output(cv::Mat& img, const vector<cv::Point2d>&p, int ret)
 {
     if (ret == 0)
     {
 
         cout << "unknown" << endl;
-        Mat img_ret = imread("unknown.png");
-        Mat mask = imread("unknown.png", 0);
-        Mat imgROI = img(Rect(1, 1, img_ret.cols, img_ret.rows));
+        cv::Mat img_ret = cv::imread("unknown.png");
+        cv::Mat mask = cv::imread("unknown.png", 0);
+        cv::Mat imgROI = img(cv::Rect(1, 1, img_ret.cols, img_ret.rows));
         img_ret.copyTo(imgROI, mask);
         return;
     }
@@ -251,17 +251,17 @@ void ret_output(Mat& img, const vector<Point2d>&p, int ret)
     --ret;
     //Rect R(p[ret/3*4+ret%3],p[ret / 3 * 4 + ret % 3+5]);
     //rectangle(img, R, Scalar(0, 0, 255), 3);// int lineType = 8, int shift = 0)
-    Point c(abs(p[ret / 3 * 4 + ret % 3].x + p[ret / 3 * 4 + ret % 3 + 5].x) / 2, abs(p[ret / 3 * 4 + ret % 3].y + p[ret / 3 * 4 + ret % 3 + 5].y) / 2);
-    Size s(abs(p[ret / 3 * 4 + ret % 3].x - p[ret / 3 * 4 + ret % 3 + 5].x) / 2, abs(p[ret / 3 * 4 + ret % 3].y - p[ret / 3 * 4 + ret % 3 + 5].y) / 2);
-    ellipse(img, c, s, 0,0, 360, Scalar(0, 0, 255), 3);
+    cv::Point c(abs(p[ret / 3 * 4 + ret % 3].x + p[ret / 3 * 4 + ret % 3 + 5].x) / 2, abs(p[ret / 3 * 4 + ret % 3].y + p[ret / 3 * 4 + ret % 3 + 5].y) / 2);
+    cv::Size s(abs(p[ret / 3 * 4 + ret % 3].x - p[ret / 3 * 4 + ret % 3 + 5].x) / 2, abs(p[ret / 3 * 4 + ret % 3].y - p[ret / 3 * 4 + ret % 3 + 5].y) / 2);
+    ellipse(img, c, s, 0,0, 360, cv::Scalar(0, 0, 255), 3);
    
     string img_ret_filename;
     img_ret_filename.push_back(ret + '0'+1);
     img_ret_filename += ".png";
     //cout << img_ret_filename << endl;
-    Mat img_ret = imread(img_ret_filename);
-    Mat mask = imread(img_ret_filename, 0);
-    Mat imgROI = img(Rect(1,1, mask.cols, mask.rows));
+    cv::Mat img_ret = cv::imread(img_ret_filename);
+    cv::Mat mask = cv::imread(img_ret_filename, 0);
+    cv::Mat imgROI = img(cv::Rect(1,1, mask.cols, mask.rows));
     img_ret.copyTo(imgROI , mask);
 }
 

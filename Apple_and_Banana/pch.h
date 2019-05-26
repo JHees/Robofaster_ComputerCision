@@ -13,7 +13,7 @@
 #define _CAMERA
 //#define _DEBUG
 //#ifdef _DEBUG
-    //#define _DEBUGimg
+    #define _DEBUGimg
    //#define _DEBUGtime
     //#define _DEBUGmes
 
