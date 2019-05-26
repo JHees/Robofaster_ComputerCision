@@ -1,4 +1,4 @@
-# Robofaster_ComputerCision的技术路线
+# Robofaster_ComputerVision的技术路线
 ## 查找ROI
 1. 二值化&滤波&边缘查找
 这个就不解释了哈
